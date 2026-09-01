@@ -1,0 +1,12 @@
+{
+  "title": "BRMP SDLAHAN - Sistem Monitoring SP2D",
+  "language": "id",
+  "description": "Sistem Informasi Monitoring dan Pengarsipan SP2D Kementerian Pertanian RI",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

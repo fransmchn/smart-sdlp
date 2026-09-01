@@ -1,0 +1,6 @@
+{
+  "name": "SMART - BRMP SDLAHAN",
+  "description": "SMART (Sistem Monitoring, Analisis, Reporting & Tracking) - BRMP SDLAHAN Kementerian Pertanian RI",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
