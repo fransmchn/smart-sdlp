@@ -1,11 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getActiveSession } from "@/lib/active-session";
+import { getActionSession } from "@/lib/active-session";
 import { prisma } from "@/lib/prisma";
 
 export async function getMyNotifications() {
-  const session = await getActiveSession();
+  let session;
+  try {
+    session = await getActionSession();
+  } catch {
+    return { items: [], unreadCount: 0 };
+  }
   if (!session) return { items: [], unreadCount: 0 };
 
   const items = await prisma.notification.findMany({
@@ -27,7 +32,12 @@ export async function getMyNotifications() {
 }
 
 export async function markMyNotificationsRead(ids?: string[]) {
-  const session = await getActiveSession();
+  let session;
+  try {
+    session = await getActionSession();
+  } catch {
+    return { success: false as const };
+  }
   if (!session) return { success: false as const };
 
   await prisma.notification.updateMany({

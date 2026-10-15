@@ -289,21 +289,34 @@ Expected result: all migrations applied and database schema up to date.
 
 ### 4.5 Bootstrap first admin
 
-Current `prisma/bootstrap-admin.ts` contains a fixed bootstrap email/password. Before production execution:
+`prisma/bootstrap-admin.ts` creates the initial administrator user securely.
+It reads the credentials from environment variables `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`.
+- Both variables are required and have no default values.
+- `BOOTSTRAP_ADMIN_PASSWORD` must be at least 12 characters long.
+- The created administrator account is automatically assigned `mustChangePassword = true`, requiring a password change upon first login.
 
-1. Review the script.
-2. Confirm the bootstrap credentials are approved for first login.
-3. Run only once:
+Run only once during initial setup:
 
 ```bash
+export BOOTSTRAP_ADMIN_EMAIL="<ADMIN_EMAIL>"
+export BOOTSTRAP_ADMIN_PASSWORD="<STRONG_PASSWORD_MIN_12_CHARS>"
 bun run prisma/bootstrap-admin.ts
+unset BOOTSTRAP_ADMIN_EMAIL BOOTSTRAP_ADMIN_PASSWORD
 ```
 
-4. Log in immediately and change the password.
-5. Do not run again if the admin email already exists; the script intentionally stops.
-6. Remove or securely archive the bootstrap credential after password rotation.
+On PowerShell:
 
-If production policy forbids any credential in source, change `bootstrap-admin.ts` to read `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` from the protected environment before deployment. Never commit production credentials.
+```powershell
+$env:BOOTSTRAP_ADMIN_EMAIL = "<ADMIN_EMAIL>"
+$env:BOOTSTRAP_ADMIN_PASSWORD = "<STRONG_PASSWORD_MIN_12_CHARS>"
+bun run prisma/bootstrap-admin.ts
+Remove-Item Env:BOOTSTRAP_ADMIN_EMAIL
+Remove-Item Env:BOOTSTRAP_ADMIN_PASSWORD
+```
+
+1. Log in immediately at `/login` with the bootstrap credentials.
+2. The system forces an immediate password change via `/account/change-password`.
+3. Do not run again if the admin email already exists; the script intentionally stops.
 
 ---
 

@@ -226,14 +226,14 @@ Isi placeholder dengan nilai environment masing-masing. Jangan commit file envir
 | Variable | Keterangan | Contoh aman |
 | --- | --- | --- |
 | `BOOTSTRAP_ADMIN_EMAIL` | Email admin pertama yang akan dibuat oleh `prisma/bootstrap-admin.ts`. | `admin@<DOMAIN>` |
-| `BOOTSTRAP_ADMIN_PASSWORD` | Password kuat untuk admin pertama. | `<ONE_TIME_STRONG_PASSWORD>` |
+| `BOOTSTRAP_ADMIN_PASSWORD` | Password kuat untuk admin pertama (minimal 12 karakter). | `<ONE_TIME_STRONG_PASSWORD>` |
 
 #### Opsional, diperlukan untuk upload file otomatis ke Google Drive
 
 | Variable | Keterangan | Contoh aman |
 | --- | --- | --- |
 | `GOOGLE_CLIENT_EMAIL` | Email service account Google Cloud dengan akses ke folder/Shared Drive tujuan. | `<SERVICE_ACCOUNT>@<PROJECT>.iam.gserviceaccount.com` |
-| `GOOGLE_PRIVATE_KEY` | Private key service account. Newline di environment ditulis sebagai `\\n`. | `-----BEGIN PRIVATE KEY-----\\n<KEY>\\n-----END PRIVATE KEY-----` |
+| `GOOGLE_PRIVATE_KEY` | Private key service account. Newline di environment ditulis sebagai `\n`. | `-----BEGIN PRIVATE KEY-----\n<KEY>\n-----END PRIVATE KEY-----` |
 | `GOOGLE_DRIVE_FOLDER_ID` | ID folder root Google Drive untuk penyimpanan dokumen. | `<GOOGLE_DRIVE_FOLDER_ID>` |
 
 #### Opsional runtime
@@ -275,11 +275,11 @@ Migration saat ini berada di:
 
 ### Bootstrap Admin Pertama
 
-`prisma/bootstrap-admin.ts` membutuhkan `BOOTSTRAP_ADMIN_EMAIL` dan `BOOTSTRAP_ADMIN_PASSWORD`. Set variable hanya untuk proses bootstrap, lalu jalankan script satu kali:
+`prisma/bootstrap-admin.ts` membutuhkan `BOOTSTRAP_ADMIN_EMAIL` dan `BOOTSTRAP_ADMIN_PASSWORD` (keduanya wajib, tanpa nilai default). Password wajib minimal 12 karakter. Akun admin hasil bootstrap otomatis diset `mustChangePassword = true` sehingga wajib mengganti kata sandi saat pertama kali login. Set variable hanya untuk proses bootstrap, lalu jalankan script satu kali:
 
 ```bash
 export BOOTSTRAP_ADMIN_EMAIL="admin@<DOMAIN>"
-export BOOTSTRAP_ADMIN_PASSWORD="<ONE_TIME_STRONG_PASSWORD>"
+export BOOTSTRAP_ADMIN_PASSWORD="<ONE_TIME_STRONG_PASSWORD_MIN_12_CHARS>"
 bun run prisma/bootstrap-admin.ts
 unset BOOTSTRAP_ADMIN_EMAIL BOOTSTRAP_ADMIN_PASSWORD
 ```
@@ -288,13 +288,13 @@ Pada PowerShell:
 
 ```powershell
 $env:BOOTSTRAP_ADMIN_EMAIL = "admin@<DOMAIN>"
-$env:BOOTSTRAP_ADMIN_PASSWORD = "<ONE_TIME_STRONG_PASSWORD>"
+$env:BOOTSTRAP_ADMIN_PASSWORD = "<ONE_TIME_STRONG_PASSWORD_MIN_12_CHARS>"
 bun run prisma/bootstrap-admin.ts
 Remove-Item Env:BOOTSTRAP_ADMIN_EMAIL
 Remove-Item Env:BOOTSTRAP_ADMIN_PASSWORD
 ```
 
-Script menolak membuat admin jika email tersebut sudah ada. Simpan password dengan aman dan ganti sesuai kebijakan operasional setelah login pertama bila diperlukan.
+Script menolak membuat admin jika email tersebut sudah ada atau password kurang dari 12 karakter. Setelah dibuat, admin wajib login dan mengganti kata sandi.
 
 ### Development Server
 
