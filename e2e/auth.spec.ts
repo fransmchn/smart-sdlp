@@ -50,14 +50,22 @@ const uniqueEmail = () => `e2e-must-change-${Date.now()}@example.test`;
     await page.getByPlaceholder("Nama").fill(name);
     await page.getByPlaceholder("NIP").fill(`E2E-${Date.now()}`);
     await page.getByPlaceholder("Email").fill(email);
-    page.once("dialog", (dialog) => dialog.accept());
+    let temporaryPassword = "";
+    page.once("dialog", async (dialog) => {
+      const match = dialog.message().match(/Password sementara:\s*(.+)/);
+      if (match) {
+        temporaryPassword = match[1].trim();
+      }
+      await dialog.accept();
+    });
     await page.getByRole("button", { name: "Buat User", exact: true }).click();
     await expect.poll(async () => db<{ mustChangePassword: boolean } | null>("getUserPasswordState", { email })).toMatchObject({ mustChangePassword: true });
+    expect(temporaryPassword.length).toBeGreaterThanOrEqual(12);
 
     await page.getByRole("button", { name: "Keluar Sistem", exact: true }).click();
     await waitBetweenAuthOperations();
     await expect(page).toHaveURL(/\/login/);
-    await login(page, email, "internubsi2026");
+    await login(page, email, temporaryPassword);
     await expect(page).toHaveURL(/\/account\/change-password/);
 
     await page.goto("/dashboard");

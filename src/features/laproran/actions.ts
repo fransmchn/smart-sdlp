@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getActiveSession } from "@/lib/active-session";
+import { getActionSession } from "@/lib/active-session";
 import { createUserNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import {
@@ -38,7 +38,15 @@ type TransactionResult = SubmitLaporanResult;
 export async function submitLaporan(
   input: SubmitLaporanInput,
 ): Promise<SubmitLaporanResult> {
-  const session = await getActiveSession();
+  let session;
+  try {
+    session = await getActionSession();
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Wajib ganti kata sandi terlebih dahulu.",
+    };
+  }
   if (!session) {
     return { success: false, error: "Sesi tidak valid, silakan login ulang." };
   }

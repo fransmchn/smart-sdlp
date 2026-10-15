@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { recordAdminAudit } from "@/lib/audit";
+import { generateSecureTemporaryPassword } from "@/lib/password";
 
 const createSchema = z.object({
   name: z.string().trim().min(1, "Nama wajib diisi"),
@@ -23,7 +24,7 @@ export async function createAdminUser(input: { name: string; email: string; nip:
   if (existing) return { success: false as const, error: "Email sudah digunakan, termasuk oleh akun nonaktif." };
 
   const context = await auth.$context;
-  const password = "internubsi2026";
+  const password = generateSecureTemporaryPassword(16);
   let user;
   try {
     user = await context.internalAdapter.createUser({
@@ -60,7 +61,7 @@ export async function createAdminUser(input: { name: string; email: string; nip:
 }
 
 export async function markPasswordChanged() {
-  const session = await requireActiveSession();
+  const session = await requireActiveSession({ allowMustChangePassword: true });
   await prisma.user.update({ where: { id: session.user.id }, data: { mustChangePassword: false } });
   return { success: true as const };
 }

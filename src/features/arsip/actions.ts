@@ -2,11 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { getActiveSession } from "@/lib/active-session";
+import { getActionSession } from "@/lib/active-session";
 import { createUserNotification } from "@/lib/notifications";
 
 export async function deleteLaporan(laporanId: string, alasan: string) {
-  const session = await getActiveSession();
+  let session;
+  try {
+    session = await getActionSession();
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Wajib ganti kata sandi terlebih dahulu.",
+    };
+  }
 
   if (!session || session.user.role?.toLowerCase() !== "admin") {
     return {
@@ -149,7 +157,15 @@ export async function deleteLaporan(laporanId: string, alasan: string) {
 }
 
 export async function ingatkanPJ(kegiatanId: string, periode: string) {
-  const session = await getActiveSession();
+  let session;
+  try {
+    session = await getActionSession();
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Wajib ganti kata sandi terlebih dahulu.",
+    };
+  }
   if (!session || session.user.role?.toLowerCase() !== "admin") {
     return {
       success: false,
