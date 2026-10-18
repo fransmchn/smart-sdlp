@@ -4,8 +4,25 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getActionSession } from "@/lib/active-session";
 import { createUserNotification } from "@/lib/notifications";
+import { recordAdminAudit } from "@/lib/audit";
+import { buildLaporanSnapshot } from "@/utils/laporanSnapshot";
+import { computeAccessOpenedUntil } from "@/utils/reportAccess";
+import {
+  formatReportDeadline,
+  isReportDeadlinePassed,
+} from "@/utils/reportDeadline";
 
-export async function deleteLaporan(laporanId: string, alasan: string) {
+// Lama akses lapor yang dibuka otomatis saat admin mengizinkan PJ mengisi ulang.
+const REFILL_ACCESS_DAYS = 7;
+
+// Menghapus laporan. Sebelum dihapus, isi laporan disalin ke Log Audit.
+// Bila izinkanIsiUlang aktif dan batas waktu periode sudah lewat, akses lapor
+// untuk kegiatan dan bulan itu dibuka selama 7 hari supaya PJ bisa mengisi ulang.
+export async function deleteLaporan(
+  laporanId: string,
+  alasan: string,
+  izinkanIsiUlang = false,
+) {
   let session;
   try {
     session = await getActionSession();
@@ -59,6 +76,27 @@ export async function deleteLaporan(laporanId: string, alasan: string) {
     const namaPeriode = `${NAMA_BULAN[target.periodeBulan - 1]} ${target.periodeTahun}`;
     let notifStatus = "GAGAL: Email PJ tidak tersedia";
 
+    // Akses isi ulang hanya berguna bila batas waktu sudah lewat, kegiatan punya PJ,
+    // dan kegiatan tidak sedang diblokir.
+    const settings = await prisma.appSettings.findFirst();
+    const deadlinePassed = isReportDeadlinePassed(
+      target.periodeTahun,
+      target.periodeBulan,
+      {
+        day: settings?.reportDeadlineDay ?? 25,
+        time: settings?.reportDeadlineTime ?? "23:59",
+      },
+    );
+    const bukaAksesIsiUlang =
+      izinkanIsiUlang &&
+      deadlinePassed &&
+      Boolean(target.kegiatan.pjId) &&
+      target.kegiatan.statusAnggaran !== "DIBLOKIR";
+    const aksesSampai = bukaAksesIsiUlang
+      ? computeAccessOpenedUntil(REFILL_ACCESS_DAYS)
+      : null;
+    const aksesSampaiLabel = aksesSampai ? formatReportDeadline(aksesSampai) : null;
+
     if (target.kegiatan.pj?.email) {
       try {
         const { buildEmailTemplate, sendMail, escapeHtml } = await import("@/lib/mailer");
@@ -70,8 +108,8 @@ export async function deleteLaporan(laporanId: string, alasan: string) {
         const mailResult = await sendMail({
           to: target.kegiatan.pj.email,
           subject: `Laporan Realisasi ${safeKode} Dihapus/Ditolak — SMART BRMP SDLP`,
-          html: buildEmailTemplate("Laporan Dihapus/Ditolak", `<p>Yth. ${safePjName},</p><p>Laporan realisasi kegiatan <strong>${safeKode} ? ${safeNama}</strong> periode <strong>${safePeriode}</strong> telah dihapus/ditolak oleh admin.</p><p><strong>Alasan:</strong> ${safeAlasan}</p><p>Silakan hubungi admin atau masuk ke aplikasi SMART BRMP SDLP untuk informasi lebih lanjut.</p>`),
-          text: `Yth. ${safePjName}, laporan realisasi ${safeKode} — ${safeNama} periode ${safePeriode} telah dihapus/ditolak oleh admin. Alasan: ${safeAlasan}. Silakan hubungi admin atau masuk ke aplikasi SMART BRMP SDLP untuk informasi lebih lanjut.`,
+          html: buildEmailTemplate("Laporan Dihapus/Ditolak", `<p>Yth. ${safePjName},</p><p>Laporan realisasi kegiatan <strong>${safeKode} ? ${safeNama}</strong> periode <strong>${safePeriode}</strong> telah dihapus/ditolak oleh admin.</p><p><strong>Alasan:</strong> ${safeAlasan}</p>${aksesSampaiLabel ? `<p>Anda dapat mengisi ulang laporan periode ini sampai <strong>${escapeHtml(aksesSampaiLabel)}</strong>.</p>` : ""}<p>Silakan hubungi admin atau masuk ke aplikasi SMART BRMP SDLP untuk informasi lebih lanjut.</p>`),
+          text: `Yth. ${safePjName}, laporan realisasi ${safeKode} — ${safeNama} periode ${safePeriode} telah dihapus/ditolak oleh admin. Alasan: ${safeAlasan}.${aksesSampaiLabel ? ` Anda dapat mengisi ulang laporan periode ini sampai ${aksesSampaiLabel}.` : ""} Silakan hubungi admin atau masuk ke aplikasi SMART BRMP SDLP untuk informasi lebih lanjut.`,
         });
         notifStatus = mailResult.success ? "TERKIRIM" : "GAGAL: Pengiriman email gagal";
         if (!mailResult.success) console.error("Notifikasi penghapusan laporan gagal dikirim:", mailResult.error);
@@ -99,6 +137,8 @@ export async function deleteLaporan(laporanId: string, alasan: string) {
           adminEmail: session.user.email,
           alasan: alasan.trim(),
           notifStatus,
+          // Salinan isi laporan, supaya angka yang dihapus tetap bisa dilihat.
+          dataSnapshot: buildLaporanSnapshot(target, target.kegiatan),
         },
       });
 
@@ -138,15 +178,54 @@ export async function deleteLaporan(laporanId: string, alasan: string) {
           },
         });
       }
+
+      // 4. Bila diizinkan, buka akses lapor supaya PJ bisa mengisi ulang laporan ini.
+      if (aksesSampai) {
+        await tx.reportAccessOverride.upsert({
+          where: {
+            kegiatanId_periodeBulan_periodeTahun: {
+              kegiatanId: target.kegiatanId,
+              periodeBulan: target.periodeBulan,
+              periodeTahun: target.periodeTahun,
+            },
+          },
+          update: {
+            openedUntil: aksesSampai,
+            reason: `Laporan dihapus admin: ${alasan.trim()}`,
+            createdById: session.user.id,
+            revokedAt: null,
+          },
+          create: {
+            kegiatanId: target.kegiatanId,
+            periodeBulan: target.periodeBulan,
+            periodeTahun: target.periodeTahun,
+            openedUntil: aksesSampai,
+            reason: `Laporan dihapus admin: ${alasan.trim()}`,
+            createdById: session.user.id,
+          },
+        });
+        await recordAdminAudit(
+          {
+            action: "OPEN_REPORT_ACCESS",
+            adminName: session.user.name,
+            adminEmail: session.user.email,
+            kodeKegiatan: target.kegiatan.kode,
+            namaKegiatan: target.kegiatan.nama,
+            alasan: `Buka akses ${namaPeriode}, ${REFILL_ACCESS_DAYS} hari (otomatis setelah laporan dihapus). Alasan hapus: ${alasan.trim()}`,
+          },
+          tx,
+        );
+      }
     });
 
     revalidatePath("/admin/arsip-sp2d");
+    revalidatePath("/input");
     revalidatePath("/admin/log-audit");
     revalidatePath("/admin/master");
     revalidatePath("/admin/dashboard");
     revalidatePath("/dashboard");
 
-    return { success: true };
+    return { success: true, aksesDibukaSampai: aksesSampaiLabel };
   } catch (error) {
     console.error("Gagal menghapus laporan:", error);
     return {

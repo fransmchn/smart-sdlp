@@ -90,6 +90,7 @@ export function MasterArsipSMARTPage({
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ArsipItem | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
+  const [allowRefill, setAllowRefill] = useState(true);
 
   // Modal Buka Akses Lapor
   const [accessModalOpen, setAccessModalOpen] = useState(false);
@@ -126,8 +127,16 @@ export function MasterArsipSMARTPage({
   const openDeleteModal = (item: ArsipItem) => {
     setSelectedItem(item);
     setDeleteReason("");
+    setAllowRefill(true);
     setDeleteModalOpen(true);
   };
+
+  // Pengisian ulang hanya relevan bila batas waktu sudah lewat dan kegiatan tidak diblokir.
+  // Bila batas waktu belum lewat, PJ memang masih bisa mengisi ulang tanpa akses khusus.
+  const refillApplicable = Boolean(
+    selectedItem?.deadlinePassed &&
+      selectedItem.statusAnggaran.toUpperCase() !== "DIBLOKIR",
+  );
 
   const handleConfirmDelete = () => {
     if (!selectedItem || !selectedItem.laporanId) return;
@@ -140,10 +149,14 @@ export function MasterArsipSMARTPage({
       const res = await deleteLaporan(
         selectedItem.laporanId!,
         deleteReason.trim(),
+        refillApplicable && allowRefill,
       );
       if (res.success) {
         toast.success(
-          `Laporan "${selectedItem.nama}" periode ${selectedItem.periode} berhasil dihapus.`,
+          `Laporan "${selectedItem.nama}" periode ${selectedItem.periode} berhasil dihapus.` +
+            (res.aksesDibukaSampai
+              ? ` PJ dapat mengisi ulang sampai ${res.aksesDibukaSampai}.`
+              : ""),
         );
         setDeleteModalOpen(false);
         setSelectedItem(null);
@@ -699,6 +712,27 @@ export function MasterArsipSMARTPage({
                 className="w-full p-2.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-rose-500"
               />
             </div>
+
+            {refillApplicable ? (
+              <label className="flex items-start gap-2 rounded-md border border-sky-200 bg-sky-50 p-2.5 text-xs text-sky-900 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allowRefill}
+                  onChange={(e) => setAllowRefill(e.target.checked)}
+                  className="mt-0.5 h-3.5 w-3.5 cursor-pointer"
+                />
+                <span>
+                  <strong>Izinkan PJ mengisi ulang.</strong> Batas waktu periode ini
+                  sudah lewat, jadi akses lapor dibuka selama 7 hari agar PJ bisa
+                  mengirim laporan pengganti.
+                </span>
+              </label>
+            ) : (
+              <p className="text-[11px] text-slate-500">
+                PJ masih dapat mengisi ulang laporan ini selama batas waktu
+                periodenya belum lewat.
+              </p>
+            )}
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
               <button

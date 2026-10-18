@@ -3,6 +3,12 @@ import { getActiveSession } from "@/lib/active-session";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { LogAuditPage } from "@/components/LogAuditPage";
+import {
+  formatRupiahDariTeks,
+  parseLaporanSnapshot,
+} from "@/utils/laporanSnapshot";
+import { formatPeriodeLabel } from "@/utils/reportAccess";
+import { formatWaktuWib } from "@/utils/waktu";
 
 const PAGE_SIZE = 10;
 
@@ -45,7 +51,25 @@ export default async function AuditLogRoute({
     prisma.auditLog.count({ where }),
   ]);
 
-  const serializedLogs = logs.map((log) => ({
+  const serializedLogs = logs.map((log) => {
+    // Salinan isi laporan yang disimpan saat laporan dihapus (log lama tidak punya).
+    const snap = parseLaporanSnapshot(log.dataSnapshot);
+    const salinan = snap
+      ? [
+          { label: "Periode", value: formatPeriodeLabel(snap.periodeBulan, snap.periodeTahun) },
+          { label: "Kegiatan", value: `${snap.kodeKegiatan} - ${snap.namaKegiatan}` },
+          { label: "Pagu kegiatan", value: formatRupiahDariTeks(snap.paguKegiatan) },
+          { label: "Realisasi periode lalu", value: formatRupiahDariTeks(snap.realLalu) },
+          { label: "Realisasi periode ini", value: formatRupiahDariTeks(snap.realIni) },
+          { label: "Realisasi s.d. periode", value: formatRupiahDariTeks(snap.realisasi) },
+          { label: "Capaian fisik", value: `${snap.fisik}%` },
+          { label: "Status anggaran", value: snap.statusAnggaran },
+          { label: "Uraian", value: snap.uraian || "-" },
+          { label: "Pertama dikirim", value: formatWaktuWib(new Date(snap.dibuatPada)) },
+          { label: "Revisi terakhir", value: formatWaktuWib(new Date(snap.diubahPada)) },
+        ]
+      : null;
+    return {
     id: log.id,
     waktu:
       log.createdAt.toLocaleDateString("id-ID", {
@@ -63,7 +87,9 @@ export default async function AuditLogRoute({
     adminEmail: log.adminEmail,
     alasan: log.alasan,
     notif: log.notifStatus,
-  }));
+    salinan,
+    };
+  });
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 

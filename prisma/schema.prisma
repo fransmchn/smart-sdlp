@@ -236,6 +236,7 @@ model AuditLog {
   adminEmail   String
   alasan       String
   notifStatus  String   @default("Terkirim ke Email")
+  dataSnapshot Json?
   createdAt    DateTime @default(now())
 
   @@map("audit_log")

@@ -66,6 +66,7 @@ export type AuditLogCountAggregateOutputType = {
   adminEmail: number
   alasan: number
   notifStatus: number
+  dataSnapshot: number
   createdAt: number
   _all: number
 }
@@ -113,6 +114,7 @@ export type AuditLogCountAggregateInputType = {
   adminEmail?: true
   alasan?: true
   notifStatus?: true
+  dataSnapshot?: true
   createdAt?: true
   _all?: true
 }
@@ -201,6 +203,7 @@ export type AuditLogGroupByOutputType = {
   adminEmail: string
   alasan: string
   notifStatus: string
+  dataSnapshot: runtime.JsonValue | null
   createdAt: Date
   _count: AuditLogCountAggregateOutputType | null
   _min: AuditLogMinAggregateOutputType | null
@@ -237,6 +240,7 @@ export type AuditLogWhereInput = {
   adminEmail?: Prisma.StringFilter<"AuditLog"> | string
   alasan?: Prisma.StringFilter<"AuditLog"> | string
   notifStatus?: Prisma.StringFilter<"AuditLog"> | string
+  dataSnapshot?: Prisma.JsonNullableFilter<"AuditLog">
   createdAt?: Prisma.DateTimeFilter<"AuditLog"> | Date | string
 }
 
@@ -252,6 +256,7 @@ export type AuditLogOrderByWithRelationInput = {
   adminEmail?: Prisma.SortOrder
   alasan?: Prisma.SortOrder
   notifStatus?: Prisma.SortOrder
+  dataSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -270,6 +275,7 @@ export type AuditLogWhereUniqueInput = Prisma.AtLeast<{
   adminEmail?: Prisma.StringFilter<"AuditLog"> | string
   alasan?: Prisma.StringFilter<"AuditLog"> | string
   notifStatus?: Prisma.StringFilter<"AuditLog"> | string
+  dataSnapshot?: Prisma.JsonNullableFilter<"AuditLog">
   createdAt?: Prisma.DateTimeFilter<"AuditLog"> | Date | string
 }, "id">
 
@@ -285,6 +291,7 @@ export type AuditLogOrderByWithAggregationInput = {
   adminEmail?: Prisma.SortOrder
   alasan?: Prisma.SortOrder
   notifStatus?: Prisma.SortOrder
+  dataSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.AuditLogCountOrderByAggregateInput
   _max?: Prisma.AuditLogMaxOrderByAggregateInput
@@ -306,6 +313,7 @@ export type AuditLogScalarWhereWithAggregatesInput = {
   adminEmail?: Prisma.StringWithAggregatesFilter<"AuditLog"> | string
   alasan?: Prisma.StringWithAggregatesFilter<"AuditLog"> | string
   notifStatus?: Prisma.StringWithAggregatesFilter<"AuditLog"> | string
+  dataSnapshot?: Prisma.JsonNullableWithAggregatesFilter<"AuditLog">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AuditLog"> | Date | string
 }
 
@@ -321,6 +329,7 @@ export type AuditLogCreateInput = {
   adminEmail: string
   alasan: string
   notifStatus?: string
+  dataSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
 
@@ -336,6 +345,7 @@ export type AuditLogUncheckedCreateInput = {
   adminEmail: string
   alasan: string
   notifStatus?: string
+  dataSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
 
@@ -351,6 +361,7 @@ export type AuditLogUpdateInput = {
   adminEmail?: Prisma.StringFieldUpdateOperationsInput | string
   alasan?: Prisma.StringFieldUpdateOperationsInput | string
   notifStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  dataSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -366,6 +377,7 @@ export type AuditLogUncheckedUpdateInput = {
   adminEmail?: Prisma.StringFieldUpdateOperationsInput | string
   alasan?: Prisma.StringFieldUpdateOperationsInput | string
   notifStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  dataSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -381,6 +393,7 @@ export type AuditLogCreateManyInput = {
   adminEmail: string
   alasan: string
   notifStatus?: string
+  dataSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
 
@@ -396,6 +409,7 @@ export type AuditLogUpdateManyMutationInput = {
   adminEmail?: Prisma.StringFieldUpdateOperationsInput | string
   alasan?: Prisma.StringFieldUpdateOperationsInput | string
   notifStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  dataSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -411,6 +425,7 @@ export type AuditLogUncheckedUpdateManyInput = {
   adminEmail?: Prisma.StringFieldUpdateOperationsInput | string
   alasan?: Prisma.StringFieldUpdateOperationsInput | string
   notifStatus?: Prisma.StringFieldUpdateOperationsInput | string
+  dataSnapshot?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -426,6 +441,7 @@ export type AuditLogCountOrderByAggregateInput = {
   adminEmail?: Prisma.SortOrder
   alasan?: Prisma.SortOrder
   notifStatus?: Prisma.SortOrder
+  dataSnapshot?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -473,6 +489,7 @@ export type AuditLogSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   adminEmail?: boolean
   alasan?: boolean
   notifStatus?: boolean
+  dataSnapshot?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["auditLog"]>
 
@@ -488,6 +505,7 @@ export type AuditLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   adminEmail?: boolean
   alasan?: boolean
   notifStatus?: boolean
+  dataSnapshot?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["auditLog"]>
 
@@ -503,6 +521,7 @@ export type AuditLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   adminEmail?: boolean
   alasan?: boolean
   notifStatus?: boolean
+  dataSnapshot?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["auditLog"]>
 
@@ -518,10 +537,11 @@ export type AuditLogSelectScalar = {
   adminEmail?: boolean
   alasan?: boolean
   notifStatus?: boolean
+  dataSnapshot?: boolean
   createdAt?: boolean
 }
 
-export type AuditLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "action" | "namaFile" | "kodeKegiatan" | "namaKegiatan" | "pemilikNama" | "pemilikEmail" | "adminNama" | "adminEmail" | "alasan" | "notifStatus" | "createdAt", ExtArgs["result"]["auditLog"]>
+export type AuditLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "action" | "namaFile" | "kodeKegiatan" | "namaKegiatan" | "pemilikNama" | "pemilikEmail" | "adminNama" | "adminEmail" | "alasan" | "notifStatus" | "dataSnapshot" | "createdAt", ExtArgs["result"]["auditLog"]>
 
 export type $AuditLogPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "AuditLog"
@@ -538,6 +558,7 @@ export type $AuditLogPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     adminEmail: string
     alasan: string
     notifStatus: string
+    dataSnapshot: runtime.JsonValue | null
     createdAt: Date
   }, ExtArgs["result"]["auditLog"]>
   composites: {}
@@ -973,6 +994,7 @@ export interface AuditLogFieldRefs {
   readonly adminEmail: Prisma.FieldRef<"AuditLog", 'String'>
   readonly alasan: Prisma.FieldRef<"AuditLog", 'String'>
   readonly notifStatus: Prisma.FieldRef<"AuditLog", 'String'>
+  readonly dataSnapshot: Prisma.FieldRef<"AuditLog", 'Json'>
   readonly createdAt: Prisma.FieldRef<"AuditLog", 'DateTime'>
 }
     
