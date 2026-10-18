@@ -408,7 +408,8 @@ export const ModelName = {
   Laporan: 'Laporan',
   Notification: 'Notification',
   AuditLog: 'AuditLog',
-  Dokumen: 'Dokumen'
+  Dokumen: 'Dokumen',
+  ReportAccessOverride: 'ReportAccessOverride'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -424,7 +425,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "authAttempt" | "session" | "account" | "verification" | "appSettings" | "programCategory" | "kegiatan" | "laporan" | "notification" | "auditLog" | "dokumen"
+    modelProps: "user" | "authAttempt" | "session" | "account" | "verification" | "appSettings" | "programCategory" | "kegiatan" | "laporan" | "notification" | "auditLog" | "dokumen" | "reportAccessOverride"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1316,6 +1317,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ReportAccessOverride: {
+      payload: Prisma.$ReportAccessOverridePayload<ExtArgs>
+      fields: Prisma.ReportAccessOverrideFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ReportAccessOverrideFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessOverridePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ReportAccessOverrideFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessOverridePayload>
+        }
+        findFirst: {
+          args: Prisma.ReportAccessOverrideFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessOverridePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ReportAccessOverrideFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessOverridePayload>
+        }
+        findMany: {
+          args: Prisma.ReportAccessOverrideFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessOverridePayload>[]
+        }
+        create: {
+          args: Prisma.ReportAccessOverrideCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessOverridePayload>
+        }
+        createMany: {
+          args: Prisma.ReportAccessOverrideCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ReportAccessOverrideCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessOverridePayload>[]
+        }
+        delete: {
+          args: Prisma.ReportAccessOverrideDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessOverridePayload>
+        }
+        update: {
+          args: Prisma.ReportAccessOverrideUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessOverridePayload>
+        }
+        deleteMany: {
+          args: Prisma.ReportAccessOverrideDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ReportAccessOverrideUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ReportAccessOverrideUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessOverridePayload>[]
+        }
+        upsert: {
+          args: Prisma.ReportAccessOverrideUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessOverridePayload>
+        }
+        aggregate: {
+          args: Prisma.ReportAccessOverrideAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateReportAccessOverride>
+        }
+        groupBy: {
+          args: Prisma.ReportAccessOverrideGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ReportAccessOverrideGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ReportAccessOverrideCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ReportAccessOverrideCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1545,6 +1620,21 @@ export const DokumenScalarFieldEnum = {
 } as const
 
 export type DokumenScalarFieldEnum = (typeof DokumenScalarFieldEnum)[keyof typeof DokumenScalarFieldEnum]
+
+
+export const ReportAccessOverrideScalarFieldEnum = {
+  id: 'id',
+  kegiatanId: 'kegiatanId',
+  periodeBulan: 'periodeBulan',
+  periodeTahun: 'periodeTahun',
+  openedUntil: 'openedUntil',
+  reason: 'reason',
+  createdById: 'createdById',
+  createdAt: 'createdAt',
+  revokedAt: 'revokedAt'
+} as const
+
+export type ReportAccessOverrideScalarFieldEnum = (typeof ReportAccessOverrideScalarFieldEnum)[keyof typeof ReportAccessOverrideScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1872,6 +1962,7 @@ export type GlobalOmitConfig = {
   notification?: Prisma.NotificationOmit
   auditLog?: Prisma.AuditLogOmit
   dokumen?: Prisma.DokumenOmit
+  reportAccessOverride?: Prisma.ReportAccessOverrideOmit
 }
 
 /* Types for Logging */

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { showToast } from "@/components/ui/app-toast";
 import { fmtRupiah } from "@/utils/formatters";
 import { submitLaporan } from "@/features/laproran/actions";
+import { canSubmitReport } from "@/utils/reportAccess";
 import {
   formatReportDeadline,
   getReportDeadline,
@@ -52,6 +53,12 @@ interface InputLaporanPageProps {
   sessionUser: SessionUser;
   laporanHistory: LaporanHistoryItem[];
   deadline: { day: number; time: string };
+  accessOverrides: {
+    kegiatanId: string;
+    periodeBulan: number;
+    periodeTahun: number;
+    openedUntil: number;
+  }[];
   serverNow: number;
 }
 
@@ -76,6 +83,7 @@ export function InputLaporanPage({
   sessionUser,
   laporanHistory,
   deadline,
+  accessOverrides,
   serverNow,
 }: InputLaporanPageProps) {
   const router = useRouter();
@@ -134,7 +142,20 @@ export function InputLaporanPage({
     deadline,
     new Date(clientNow),
   );
-  const isReadOnly = deadlinePassed;
+  // Admin dapat membuka akses lapor untuk kegiatan dan bulan ini walau batas waktu sudah lewat.
+  const aksesDibuka = accessOverrides.find(
+    (a) =>
+      a.kegiatanId === activeKegiatan.id &&
+      a.periodeBulan === periode.bulan &&
+      a.periodeTahun === periode.tahun,
+  );
+  const accessActive = Boolean(aksesDibuka) &&
+    canSubmitReport({ deadlinePassed: true, access: aksesDibuka, now: clientNow });
+  const isReadOnly = !canSubmitReport({
+    deadlinePassed,
+    access: aksesDibuka,
+    now: clientNow,
+  });
   const isRevision = Boolean(calc.existingLaporan);
   const isBlocked = activeKegiatan.statusAnggaran === "Diblokir";
   const paguNum = activeKegiatan.pagu;
@@ -166,7 +187,7 @@ export function InputLaporanPage({
       showToast(
         "error",
         "Laporan terkunci",
-        `Batas waktu pelaporan periode ini sudah lewat pada ${formatReportDeadline(reportDeadline)}. Hubungi admin jika perlu revisi.`,
+        `Batas waktu pelaporan periode ini sudah lewat pada ${formatReportDeadline(reportDeadline)}. Hubungi admin untuk meminta akses lapor.`,
       );
       return;
     }
@@ -232,7 +253,12 @@ export function InputLaporanPage({
             )}
             {isReadOnly && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                Batas waktu pelaporan periode ini sudah lewat pada {formatReportDeadline(reportDeadline)}. Hubungi admin jika perlu revisi.
+                Batas waktu pelaporan periode ini sudah lewat pada {formatReportDeadline(reportDeadline)}. Hubungi admin untuk meminta akses lapor.
+              </div>
+            )}
+            {deadlinePassed && accessActive && aksesDibuka && (
+              <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900">
+                Batas waktu periode ini sudah lewat, tetapi admin membuka akses lapor untuk Anda sampai {formatReportDeadline(new Date(aksesDibuka.openedUntil))}.
               </div>
             )}
             {isBlocked && (

@@ -101,3 +101,8 @@ export type AuditLog = Prisma.AuditLogModel
  * 
  */
 export type Dokumen = Prisma.DokumenModel
+/**
+ * Model ReportAccessOverride
+ * 
+ */
+export type ReportAccessOverride = Prisma.ReportAccessOverrideModel

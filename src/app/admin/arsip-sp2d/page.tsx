@@ -3,6 +3,12 @@ import { getActiveSession } from "@/lib/active-session";
 import { prisma } from "@/lib/prisma";
 import { aggregateActivityReports } from "@/utils/reportAggregation";
 import {
+  formatReportDeadline,
+  isReportDeadlinePassed,
+} from "@/utils/reportDeadline";
+import { isReportAccessActive } from "@/utils/reportAccess";
+import { getReportDeadline as getReportDeadlineSettings } from "@/features/app-settings/actions";
+import {
   MasterArsipSMARTPage,
   type ArsipItem,
 } from "@/features/arsip/components/master-arsip";
@@ -236,6 +242,31 @@ export default async function ArsipPage({
   }
 
   // ── SEMUA KODE DI BAWAH INI SEKARANG DI LUAR if/else — dipakai KEDUA mode ──
+
+  // Tandai baris yang batas waktunya sudah lewat, dan akses lapor yang sedang dibuka admin.
+  const deadlineSettings = await getReportDeadlineSettings();
+  const aksesAktif = await prisma.reportAccessOverride.findMany({
+    where: { revokedAt: null, openedUntil: { gt: new Date() } },
+  });
+  const aksesByKey = new Map(
+    aksesAktif.map((a) => [
+      `${a.kegiatanId}-${a.periodeBulan}-${a.periodeTahun}`,
+      a,
+    ]),
+  );
+  for (const item of allItems) {
+    item.deadlinePassed = isReportDeadlinePassed(
+      item.periodeTahun,
+      item.periodeBulan,
+      deadlineSettings,
+    );
+    const akses = aksesByKey.get(
+      `${item.kegiatanId}-${item.periodeBulan}-${item.periodeTahun}`,
+    );
+    const aktif = akses && isReportAccessActive(akses);
+    item.aksesId = aktif ? akses.id : null;
+    item.aksesSampai = aktif ? formatReportDeadline(akses.openedUntil) : null;
+  }
 
   const sudahCount = allItems.filter((i) => i.status === "SUDAH_UPLOAD").length;
   const belumCount = allItems.filter((i) => i.status === "BELUM_UPLOAD").length;

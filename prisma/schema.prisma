@@ -45,6 +45,7 @@ model User {
   dokumenUploaded   Dokumen[]  @relation("DokumenUploader")
   laporans          Laporan[]
    notifications     Notification[]
+  reportAccessCreated ReportAccessOverride[] @relation("ReportAccessCreatedBy")
 
   @@map("user")
 }
@@ -169,6 +170,7 @@ model Kegiatan {
   updatedAt DateTime  @updatedAt
   laporan   Laporan[]
   dokumen   Dokumen[]
+  accessOverrides ReportAccessOverride[]
 
   @@index([pjId])
   @@index([kode])
@@ -270,7 +272,20 @@ model Dokumen {
   @@map("dokumen")
 }
 
+model ReportAccessOverride {
+  id           String    @id @default(cuid())
+  kegiatanId   String
+  kegiatan     Kegiatan  @relation(fields: [kegiatanId], references: [id], onDelete: Cascade)
+  periodeBulan Int
+  periodeTahun Int
+  openedUntil  DateTime
+  reason       String
+  createdById  String?
+  createdBy    User?     @relation("ReportAccessCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  revokedAt    DateTime?
 
-
-
-
+  @@unique([kegiatanId, periodeBulan, periodeTahun], map: "report_access_override_kegiatan_periode_key")
+  @@index([kegiatanId])
+  @@map("report_access_override")
+}

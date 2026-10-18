@@ -253,6 +253,7 @@ export type UserWhereInput = {
   dokumenUploaded?: Prisma.DokumenListRelationFilter
   laporans?: Prisma.LaporanListRelationFilter
   notifications?: Prisma.NotificationListRelationFilter
+  reportAccessCreated?: Prisma.ReportAccessOverrideListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -276,6 +277,7 @@ export type UserOrderByWithRelationInput = {
   dokumenUploaded?: Prisma.DokumenOrderByRelationAggregateInput
   laporans?: Prisma.LaporanOrderByRelationAggregateInput
   notifications?: Prisma.NotificationOrderByRelationAggregateInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -302,6 +304,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   dokumenUploaded?: Prisma.DokumenListRelationFilter
   laporans?: Prisma.LaporanListRelationFilter
   notifications?: Prisma.NotificationListRelationFilter
+  reportAccessCreated?: Prisma.ReportAccessOverrideListRelationFilter
 }, "id" | "email" | "nip">
 
 export type UserOrderByWithAggregationInput = {
@@ -363,6 +366,7 @@ export type UserCreateInput = {
   dokumenUploaded?: Prisma.DokumenCreateNestedManyWithoutUploaderInput
   laporans?: Prisma.LaporanCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -386,6 +390,7 @@ export type UserUncheckedCreateInput = {
   dokumenUploaded?: Prisma.DokumenUncheckedCreateNestedManyWithoutUploaderInput
   laporans?: Prisma.LaporanUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUpdateInput = {
@@ -409,6 +414,7 @@ export type UserUpdateInput = {
   dokumenUploaded?: Prisma.DokumenUpdateManyWithoutUploaderNestedInput
   laporans?: Prisma.LaporanUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -432,6 +438,7 @@ export type UserUncheckedUpdateInput = {
   dokumenUploaded?: Prisma.DokumenUncheckedUpdateManyWithoutUploaderNestedInput
   laporans?: Prisma.LaporanUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -666,6 +673,22 @@ export type UserUpdateOneWithoutDokumenUploadedNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutDokumenUploadedInput, Prisma.UserUpdateWithoutDokumenUploadedInput>, Prisma.UserUncheckedUpdateWithoutDokumenUploadedInput>
 }
 
+export type UserCreateNestedOneWithoutReportAccessCreatedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutReportAccessCreatedInput, Prisma.UserUncheckedCreateWithoutReportAccessCreatedInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutReportAccessCreatedInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutReportAccessCreatedNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutReportAccessCreatedInput, Prisma.UserUncheckedCreateWithoutReportAccessCreatedInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutReportAccessCreatedInput
+  upsert?: Prisma.UserUpsertWithoutReportAccessCreatedInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutReportAccessCreatedInput, Prisma.UserUpdateWithoutReportAccessCreatedInput>, Prisma.UserUncheckedUpdateWithoutReportAccessCreatedInput>
+}
+
 export type UserCreateWithoutSessionsInput = {
   id?: string
   name: string
@@ -686,6 +709,7 @@ export type UserCreateWithoutSessionsInput = {
   dokumenUploaded?: Prisma.DokumenCreateNestedManyWithoutUploaderInput
   laporans?: Prisma.LaporanCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutSessionsInput = {
@@ -708,6 +732,7 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   dokumenUploaded?: Prisma.DokumenUncheckedCreateNestedManyWithoutUploaderInput
   laporans?: Prisma.LaporanUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutSessionsInput = {
@@ -746,6 +771,7 @@ export type UserUpdateWithoutSessionsInput = {
   dokumenUploaded?: Prisma.DokumenUpdateManyWithoutUploaderNestedInput
   laporans?: Prisma.LaporanUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -768,6 +794,7 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   dokumenUploaded?: Prisma.DokumenUncheckedUpdateManyWithoutUploaderNestedInput
   laporans?: Prisma.LaporanUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateWithoutAccountsInput = {
@@ -790,6 +817,7 @@ export type UserCreateWithoutAccountsInput = {
   dokumenUploaded?: Prisma.DokumenCreateNestedManyWithoutUploaderInput
   laporans?: Prisma.LaporanCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutAccountsInput = {
@@ -812,6 +840,7 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   dokumenUploaded?: Prisma.DokumenUncheckedCreateNestedManyWithoutUploaderInput
   laporans?: Prisma.LaporanUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutAccountsInput = {
@@ -850,6 +879,7 @@ export type UserUpdateWithoutAccountsInput = {
   dokumenUploaded?: Prisma.DokumenUpdateManyWithoutUploaderNestedInput
   laporans?: Prisma.LaporanUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -872,6 +902,7 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   dokumenUploaded?: Prisma.DokumenUncheckedUpdateManyWithoutUploaderNestedInput
   laporans?: Prisma.LaporanUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateWithoutKegiatanSebagaiPJInput = {
@@ -894,6 +925,7 @@ export type UserCreateWithoutKegiatanSebagaiPJInput = {
   dokumenUploaded?: Prisma.DokumenCreateNestedManyWithoutUploaderInput
   laporans?: Prisma.LaporanCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutKegiatanSebagaiPJInput = {
@@ -916,6 +948,7 @@ export type UserUncheckedCreateWithoutKegiatanSebagaiPJInput = {
   dokumenUploaded?: Prisma.DokumenUncheckedCreateNestedManyWithoutUploaderInput
   laporans?: Prisma.LaporanUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutKegiatanSebagaiPJInput = {
@@ -954,6 +987,7 @@ export type UserUpdateWithoutKegiatanSebagaiPJInput = {
   dokumenUploaded?: Prisma.DokumenUpdateManyWithoutUploaderNestedInput
   laporans?: Prisma.LaporanUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutKegiatanSebagaiPJInput = {
@@ -976,6 +1010,7 @@ export type UserUncheckedUpdateWithoutKegiatanSebagaiPJInput = {
   dokumenUploaded?: Prisma.DokumenUncheckedUpdateManyWithoutUploaderNestedInput
   laporans?: Prisma.LaporanUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateWithoutLaporanSubmittedInput = {
@@ -998,6 +1033,7 @@ export type UserCreateWithoutLaporanSubmittedInput = {
   dokumenUploaded?: Prisma.DokumenCreateNestedManyWithoutUploaderInput
   laporans?: Prisma.LaporanCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutLaporanSubmittedInput = {
@@ -1020,6 +1056,7 @@ export type UserUncheckedCreateWithoutLaporanSubmittedInput = {
   dokumenUploaded?: Prisma.DokumenUncheckedCreateNestedManyWithoutUploaderInput
   laporans?: Prisma.LaporanUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutLaporanSubmittedInput = {
@@ -1047,6 +1084,7 @@ export type UserCreateWithoutLaporansInput = {
   laporanSubmitted?: Prisma.LaporanCreateNestedManyWithoutSubmittedByInput
   dokumenUploaded?: Prisma.DokumenCreateNestedManyWithoutUploaderInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutLaporansInput = {
@@ -1069,6 +1107,7 @@ export type UserUncheckedCreateWithoutLaporansInput = {
   laporanSubmitted?: Prisma.LaporanUncheckedCreateNestedManyWithoutSubmittedByInput
   dokumenUploaded?: Prisma.DokumenUncheckedCreateNestedManyWithoutUploaderInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutLaporansInput = {
@@ -1107,6 +1146,7 @@ export type UserUpdateWithoutLaporanSubmittedInput = {
   dokumenUploaded?: Prisma.DokumenUpdateManyWithoutUploaderNestedInput
   laporans?: Prisma.LaporanUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutLaporanSubmittedInput = {
@@ -1129,6 +1169,7 @@ export type UserUncheckedUpdateWithoutLaporanSubmittedInput = {
   dokumenUploaded?: Prisma.DokumenUncheckedUpdateManyWithoutUploaderNestedInput
   laporans?: Prisma.LaporanUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUpsertWithoutLaporansInput = {
@@ -1162,6 +1203,7 @@ export type UserUpdateWithoutLaporansInput = {
   laporanSubmitted?: Prisma.LaporanUpdateManyWithoutSubmittedByNestedInput
   dokumenUploaded?: Prisma.DokumenUpdateManyWithoutUploaderNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutLaporansInput = {
@@ -1184,6 +1226,7 @@ export type UserUncheckedUpdateWithoutLaporansInput = {
   laporanSubmitted?: Prisma.LaporanUncheckedUpdateManyWithoutSubmittedByNestedInput
   dokumenUploaded?: Prisma.DokumenUncheckedUpdateManyWithoutUploaderNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateWithoutNotificationsInput = {
@@ -1206,6 +1249,7 @@ export type UserCreateWithoutNotificationsInput = {
   laporanSubmitted?: Prisma.LaporanCreateNestedManyWithoutSubmittedByInput
   dokumenUploaded?: Prisma.DokumenCreateNestedManyWithoutUploaderInput
   laporans?: Prisma.LaporanCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutNotificationsInput = {
@@ -1228,6 +1272,7 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   laporanSubmitted?: Prisma.LaporanUncheckedCreateNestedManyWithoutSubmittedByInput
   dokumenUploaded?: Prisma.DokumenUncheckedCreateNestedManyWithoutUploaderInput
   laporans?: Prisma.LaporanUncheckedCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutNotificationsInput = {
@@ -1266,6 +1311,7 @@ export type UserUpdateWithoutNotificationsInput = {
   laporanSubmitted?: Prisma.LaporanUpdateManyWithoutSubmittedByNestedInput
   dokumenUploaded?: Prisma.DokumenUpdateManyWithoutUploaderNestedInput
   laporans?: Prisma.LaporanUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutNotificationsInput = {
@@ -1288,6 +1334,7 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   laporanSubmitted?: Prisma.LaporanUncheckedUpdateManyWithoutSubmittedByNestedInput
   dokumenUploaded?: Prisma.DokumenUncheckedUpdateManyWithoutUploaderNestedInput
   laporans?: Prisma.LaporanUncheckedUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserCreateWithoutDokumenUploadedInput = {
@@ -1310,6 +1357,7 @@ export type UserCreateWithoutDokumenUploadedInput = {
   laporanSubmitted?: Prisma.LaporanCreateNestedManyWithoutSubmittedByInput
   laporans?: Prisma.LaporanCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserUncheckedCreateWithoutDokumenUploadedInput = {
@@ -1332,6 +1380,7 @@ export type UserUncheckedCreateWithoutDokumenUploadedInput = {
   laporanSubmitted?: Prisma.LaporanUncheckedCreateNestedManyWithoutSubmittedByInput
   laporans?: Prisma.LaporanUncheckedCreateNestedManyWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedCreateNestedManyWithoutCreatedByInput
 }
 
 export type UserCreateOrConnectWithoutDokumenUploadedInput = {
@@ -1370,6 +1419,7 @@ export type UserUpdateWithoutDokumenUploadedInput = {
   laporanSubmitted?: Prisma.LaporanUpdateManyWithoutSubmittedByNestedInput
   laporans?: Prisma.LaporanUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUpdateManyWithoutCreatedByNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDokumenUploadedInput = {
@@ -1392,6 +1442,115 @@ export type UserUncheckedUpdateWithoutDokumenUploadedInput = {
   laporanSubmitted?: Prisma.LaporanUncheckedUpdateManyWithoutSubmittedByNestedInput
   laporans?: Prisma.LaporanUncheckedUpdateManyWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  reportAccessCreated?: Prisma.ReportAccessOverrideUncheckedUpdateManyWithoutCreatedByNestedInput
+}
+
+export type UserCreateWithoutReportAccessCreatedInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  role?: $Enums.UserRole
+  nip?: string | null
+  jabatan?: string | null
+  unitKerja?: string | null
+  isActive?: boolean
+  mustChangePassword?: boolean
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  kegiatanSebagaiPJ?: Prisma.KegiatanCreateNestedManyWithoutPjInput
+  laporanSubmitted?: Prisma.LaporanCreateNestedManyWithoutSubmittedByInput
+  dokumenUploaded?: Prisma.DokumenCreateNestedManyWithoutUploaderInput
+  laporans?: Prisma.LaporanCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutReportAccessCreatedInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  role?: $Enums.UserRole
+  nip?: string | null
+  jabatan?: string | null
+  unitKerja?: string | null
+  isActive?: boolean
+  mustChangePassword?: boolean
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  kegiatanSebagaiPJ?: Prisma.KegiatanUncheckedCreateNestedManyWithoutPjInput
+  laporanSubmitted?: Prisma.LaporanUncheckedCreateNestedManyWithoutSubmittedByInput
+  dokumenUploaded?: Prisma.DokumenUncheckedCreateNestedManyWithoutUploaderInput
+  laporans?: Prisma.LaporanUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutReportAccessCreatedInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutReportAccessCreatedInput, Prisma.UserUncheckedCreateWithoutReportAccessCreatedInput>
+}
+
+export type UserUpsertWithoutReportAccessCreatedInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutReportAccessCreatedInput, Prisma.UserUncheckedUpdateWithoutReportAccessCreatedInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutReportAccessCreatedInput, Prisma.UserUncheckedCreateWithoutReportAccessCreatedInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutReportAccessCreatedInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutReportAccessCreatedInput, Prisma.UserUncheckedUpdateWithoutReportAccessCreatedInput>
+}
+
+export type UserUpdateWithoutReportAccessCreatedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  nip?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  jabatan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  unitKerja?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  kegiatanSebagaiPJ?: Prisma.KegiatanUpdateManyWithoutPjNestedInput
+  laporanSubmitted?: Prisma.LaporanUpdateManyWithoutSubmittedByNestedInput
+  dokumenUploaded?: Prisma.DokumenUpdateManyWithoutUploaderNestedInput
+  laporans?: Prisma.LaporanUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutReportAccessCreatedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  nip?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  jabatan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  unitKerja?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  kegiatanSebagaiPJ?: Prisma.KegiatanUncheckedUpdateManyWithoutPjNestedInput
+  laporanSubmitted?: Prisma.LaporanUncheckedUpdateManyWithoutSubmittedByNestedInput
+  dokumenUploaded?: Prisma.DokumenUncheckedUpdateManyWithoutUploaderNestedInput
+  laporans?: Prisma.LaporanUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -1407,6 +1566,7 @@ export type UserCountOutputType = {
   dokumenUploaded: number
   laporans: number
   notifications: number
+  reportAccessCreated: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1417,6 +1577,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   dokumenUploaded?: boolean | UserCountOutputTypeCountDokumenUploadedArgs
   laporans?: boolean | UserCountOutputTypeCountLaporansArgs
   notifications?: boolean | UserCountOutputTypeCountNotificationsArgs
+  reportAccessCreated?: boolean | UserCountOutputTypeCountReportAccessCreatedArgs
 }
 
 /**
@@ -1478,6 +1639,13 @@ export type UserCountOutputTypeCountNotificationsArgs<ExtArgs extends runtime.Ty
   where?: Prisma.NotificationWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountReportAccessCreatedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ReportAccessOverrideWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1500,6 +1668,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   dokumenUploaded?: boolean | Prisma.User$dokumenUploadedArgs<ExtArgs>
   laporans?: boolean | Prisma.User$laporansArgs<ExtArgs>
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
+  reportAccessCreated?: boolean | Prisma.User$reportAccessCreatedArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1560,6 +1729,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   dokumenUploaded?: boolean | Prisma.User$dokumenUploadedArgs<ExtArgs>
   laporans?: boolean | Prisma.User$laporansArgs<ExtArgs>
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
+  reportAccessCreated?: boolean | Prisma.User$reportAccessCreatedArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1575,6 +1745,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     dokumenUploaded: Prisma.$DokumenPayload<ExtArgs>[]
     laporans: Prisma.$LaporanPayload<ExtArgs>[]
     notifications: Prisma.$NotificationPayload<ExtArgs>[]
+    reportAccessCreated: Prisma.$ReportAccessOverridePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1991,6 +2162,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   dokumenUploaded<T extends Prisma.User$dokumenUploadedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$dokumenUploadedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DokumenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   laporans<T extends Prisma.User$laporansArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$laporansArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LaporanPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   notifications<T extends Prisma.User$notificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  reportAccessCreated<T extends Prisma.User$reportAccessCreatedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$reportAccessCreatedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReportAccessOverridePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2591,6 +2763,30 @@ export type User$notificationsArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.NotificationScalarFieldEnum | Prisma.NotificationScalarFieldEnum[]
+}
+
+/**
+ * User.reportAccessCreated
+ */
+export type User$reportAccessCreatedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ReportAccessOverride
+   */
+  select?: Prisma.ReportAccessOverrideSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ReportAccessOverride
+   */
+  omit?: Prisma.ReportAccessOverrideOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ReportAccessOverrideInclude<ExtArgs> | null
+  where?: Prisma.ReportAccessOverrideWhereInput
+  orderBy?: Prisma.ReportAccessOverrideOrderByWithRelationInput | Prisma.ReportAccessOverrideOrderByWithRelationInput[]
+  cursor?: Prisma.ReportAccessOverrideWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ReportAccessOverrideScalarFieldEnum | Prisma.ReportAccessOverrideScalarFieldEnum[]
 }
 
 /**
