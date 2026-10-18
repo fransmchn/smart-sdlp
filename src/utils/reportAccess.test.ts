@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   canSubmitReport,
+  getAccessRequestState,
   computeAccessOpenedUntil,
   formatPeriodeLabel,
   isReportAccessActive,
@@ -52,5 +53,17 @@ assert.equal(
 assert.throws(() => computeAccessOpenedUntil(0, now), /Durasi akses/);
 
 assert.equal(formatPeriodeLabel(10, 2026), "Oktober 2026");
+
+// Status permintaan akses yang ditampilkan kepada PJ.
+const dasar = { deadlinePassed: true, accessActive: false, blocked: false };
+assert.equal(getAccessRequestState({ ...dasar, deadlinePassed: false }), "hidden");
+assert.equal(getAccessRequestState({ ...dasar, accessActive: true }), "hidden");
+assert.equal(getAccessRequestState({ ...dasar, blocked: true }), "hidden");
+assert.equal(getAccessRequestState(dasar), "can-request");
+assert.equal(getAccessRequestState({ ...dasar, latestRequestStatus: null }), "can-request");
+assert.equal(getAccessRequestState({ ...dasar, latestRequestStatus: "PENDING" }), "pending");
+assert.equal(getAccessRequestState({ ...dasar, latestRequestStatus: "REJECTED" }), "rejected");
+// Permintaan lama yang sudah disetujui tidak menghalangi permintaan baru setelah akses habis.
+assert.equal(getAccessRequestState({ ...dasar, latestRequestStatus: "APPROVED" }), "can-request");
 
 console.log("reportAccess checks passed");

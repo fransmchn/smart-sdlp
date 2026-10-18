@@ -82,3 +82,8 @@ export type Dokumen = Prisma.DokumenModel
  * 
  */
 export type ReportAccessOverride = Prisma.ReportAccessOverrideModel
+/**
+ * Model ReportAccessRequest
+ * 
+ */
+export type ReportAccessRequest = Prisma.ReportAccessRequestModel

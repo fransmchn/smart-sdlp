@@ -63,7 +63,8 @@ export const ModelName = {
   Notification: 'Notification',
   AuditLog: 'AuditLog',
   Dokumen: 'Dokumen',
-  ReportAccessOverride: 'ReportAccessOverride'
+  ReportAccessOverride: 'ReportAccessOverride',
+  ReportAccessRequest: 'ReportAccessRequest'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -287,6 +288,23 @@ export const ReportAccessOverrideScalarFieldEnum = {
 } as const
 
 export type ReportAccessOverrideScalarFieldEnum = (typeof ReportAccessOverrideScalarFieldEnum)[keyof typeof ReportAccessOverrideScalarFieldEnum]
+
+
+export const ReportAccessRequestScalarFieldEnum = {
+  id: 'id',
+  kegiatanId: 'kegiatanId',
+  periodeBulan: 'periodeBulan',
+  periodeTahun: 'periodeTahun',
+  reason: 'reason',
+  status: 'status',
+  requestedById: 'requestedById',
+  decidedById: 'decidedById',
+  decidedAt: 'decidedAt',
+  decisionNote: 'decisionNote',
+  createdAt: 'createdAt'
+} as const
+
+export type ReportAccessRequestScalarFieldEnum = (typeof ReportAccessRequestScalarFieldEnum)[keyof typeof ReportAccessRequestScalarFieldEnum]
 
 
 export const SortOrder = {

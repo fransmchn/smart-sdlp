@@ -14,7 +14,7 @@ export default async function Page({
 
   const params = await searchParams;
 
-  const [kegiatanRows, laporanHistory, deadline, aksesRows] = await Promise.all([
+  const [kegiatanRows, laporanHistory, deadline, aksesRows, permintaanRows] = await Promise.all([
     prisma.kegiatan.findMany({
       where: { pjId: session.user.id },
       include: {
@@ -54,6 +54,19 @@ export default async function Page({
         periodeBulan: true,
         periodeTahun: true,
         openedUntil: true,
+      },
+    }),
+    // Permintaan akses lapor yang pernah diajukan PJ ini (terbaru lebih dulu).
+    prisma.reportAccessRequest.findMany({
+      where: { requestedById: session.user.id },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: {
+        kegiatanId: true,
+        periodeBulan: true,
+        periodeTahun: true,
+        status: true,
+        decisionNote: true,
       },
     }),
   ]);
@@ -117,6 +130,14 @@ export default async function Page({
     openedUntil: a.openedUntil.getTime(),
   }));
 
+  const accessRequests = permintaanRows.map((r) => ({
+    kegiatanId: r.kegiatanId,
+    periodeBulan: r.periodeBulan,
+    periodeTahun: r.periodeTahun,
+    status: r.status,
+    decisionNote: r.decisionNote,
+  }));
+
   return (
     <InputLaporanPage
       kegiatanList={kegiatan}
@@ -131,6 +152,7 @@ export default async function Page({
       laporanHistory={laporanHistorySerialized}
       deadline={deadline}
       accessOverrides={accessOverrides}
+      accessRequests={accessRequests}
       serverNow={new Date().getTime()}
     />
   );

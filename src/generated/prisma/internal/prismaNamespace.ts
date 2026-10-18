@@ -409,7 +409,8 @@ export const ModelName = {
   Notification: 'Notification',
   AuditLog: 'AuditLog',
   Dokumen: 'Dokumen',
-  ReportAccessOverride: 'ReportAccessOverride'
+  ReportAccessOverride: 'ReportAccessOverride',
+  ReportAccessRequest: 'ReportAccessRequest'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -425,7 +426,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "authAttempt" | "session" | "account" | "verification" | "appSettings" | "programCategory" | "kegiatan" | "laporan" | "notification" | "auditLog" | "dokumen" | "reportAccessOverride"
+    modelProps: "user" | "authAttempt" | "session" | "account" | "verification" | "appSettings" | "programCategory" | "kegiatan" | "laporan" | "notification" | "auditLog" | "dokumen" | "reportAccessOverride" | "reportAccessRequest"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1391,6 +1392,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ReportAccessRequest: {
+      payload: Prisma.$ReportAccessRequestPayload<ExtArgs>
+      fields: Prisma.ReportAccessRequestFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ReportAccessRequestFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessRequestPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ReportAccessRequestFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessRequestPayload>
+        }
+        findFirst: {
+          args: Prisma.ReportAccessRequestFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessRequestPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ReportAccessRequestFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessRequestPayload>
+        }
+        findMany: {
+          args: Prisma.ReportAccessRequestFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessRequestPayload>[]
+        }
+        create: {
+          args: Prisma.ReportAccessRequestCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessRequestPayload>
+        }
+        createMany: {
+          args: Prisma.ReportAccessRequestCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ReportAccessRequestCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessRequestPayload>[]
+        }
+        delete: {
+          args: Prisma.ReportAccessRequestDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessRequestPayload>
+        }
+        update: {
+          args: Prisma.ReportAccessRequestUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessRequestPayload>
+        }
+        deleteMany: {
+          args: Prisma.ReportAccessRequestDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ReportAccessRequestUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ReportAccessRequestUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessRequestPayload>[]
+        }
+        upsert: {
+          args: Prisma.ReportAccessRequestUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ReportAccessRequestPayload>
+        }
+        aggregate: {
+          args: Prisma.ReportAccessRequestAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateReportAccessRequest>
+        }
+        groupBy: {
+          args: Prisma.ReportAccessRequestGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ReportAccessRequestGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ReportAccessRequestCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ReportAccessRequestCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1637,6 +1712,23 @@ export const ReportAccessOverrideScalarFieldEnum = {
 export type ReportAccessOverrideScalarFieldEnum = (typeof ReportAccessOverrideScalarFieldEnum)[keyof typeof ReportAccessOverrideScalarFieldEnum]
 
 
+export const ReportAccessRequestScalarFieldEnum = {
+  id: 'id',
+  kegiatanId: 'kegiatanId',
+  periodeBulan: 'periodeBulan',
+  periodeTahun: 'periodeTahun',
+  reason: 'reason',
+  status: 'status',
+  requestedById: 'requestedById',
+  decidedById: 'decidedById',
+  decidedAt: 'decidedAt',
+  decisionNote: 'decisionNote',
+  createdAt: 'createdAt'
+} as const
+
+export type ReportAccessRequestScalarFieldEnum = (typeof ReportAccessRequestScalarFieldEnum)[keyof typeof ReportAccessRequestScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1797,6 +1889,20 @@ export type EnumKategoriDokumenFieldRefInput<$PrismaModel> = FieldRefInputType<$
  * Reference to a field of type 'KategoriDokumen[]'
  */
 export type ListEnumKategoriDokumenFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'KategoriDokumen[]'>
+    
+
+
+/**
+ * Reference to a field of type 'AccessRequestStatus'
+ */
+export type EnumAccessRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AccessRequestStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'AccessRequestStatus[]'
+ */
+export type ListEnumAccessRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AccessRequestStatus[]'>
     
 
 /**
@@ -1963,6 +2069,7 @@ export type GlobalOmitConfig = {
   auditLog?: Prisma.AuditLogOmit
   dokumen?: Prisma.DokumenOmit
   reportAccessOverride?: Prisma.ReportAccessOverrideOmit
+  reportAccessRequest?: Prisma.ReportAccessRequestOmit
 }
 
 /* Types for Logging */

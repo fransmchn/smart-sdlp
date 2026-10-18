@@ -4,7 +4,13 @@ import { submitLaporan } from "@/features/laproran/actions";
 import { createKegiatan } from "@/features/kegiatan/actions";
 import { deleteLaporan } from "@/features/arsip/actions";
 import { deleteDokumen } from "@/features/repositori/actions";
-import { bukaAksesLapor, cabutAksesLapor } from "@/features/akses-lapor/actions";
+import {
+  bukaAksesLapor,
+  cabutAksesLapor,
+  mintaAksesLapor,
+  setujuiPermintaanAkses,
+  tolakPermintaanAkses,
+} from "@/features/akses-lapor/actions";
 import { getMyNotifications, markMyNotificationsRead } from "@/features/notifications/actions";
 
 // Mock helper
@@ -266,3 +272,107 @@ assert.equal(aksesDurasiNol.success, false);
 assert.equal(aksesDurasiNol.success === false && aksesDurasiNol.error, "Durasi minimal 1 hari.");
 
 console.log("akses lapor security checks passed");
+
+// ==============================================================================
+// Permintaan akses lapor: mintaAksesLapor, setujuiPermintaanAkses, tolakPermintaanAkses
+// ==============================================================================
+const mintaInput = {
+  kegiatanId: "keg-1",
+  periodeBulan: 1,
+  periodeTahun: 2026,
+  alasan: "Dokumen SP2D baru diterima dari bagian keuangan",
+};
+
+// Kasus 1: PJ yang wajib ganti password ditolak
+setSession({
+  id: "pj-must-change",
+  name: "PJ Baru",
+  email: "pj.baru@pertanian.go.id",
+  role: "USER",
+  mustChangePassword: true,
+  isActive: true,
+});
+const mintaBlocked = await mintaAksesLapor(mintaInput);
+assert.equal(mintaBlocked.success, false);
+assert.equal(mintaBlocked.success === false && mintaBlocked.error, "Wajib ganti kata sandi terlebih dahulu.");
+
+// Kasus 2: tanpa sesi
+setSession(null);
+const mintaNoSession = await mintaAksesLapor(mintaInput);
+assert.equal(mintaNoSession.success, false);
+assert.equal(mintaNoSession.success === false && mintaNoSession.error, "Sesi tidak valid, silakan login ulang.");
+
+// Kasus 3: admin tidak perlu meminta akses
+setSession({
+  id: "admin-2",
+  name: "Admin",
+  email: "admin2@pertanian.go.id",
+  role: "ADMIN",
+  mustChangePassword: false,
+  isActive: true,
+});
+const mintaAdmin = await mintaAksesLapor(mintaInput);
+assert.equal(mintaAdmin.success, false);
+assert.equal(
+  mintaAdmin.success === false && mintaAdmin.error,
+  "Admin tidak perlu meminta akses. Gunakan tombol Buka Akses di halaman Arsip.",
+);
+
+// Kasus 4: PJ dengan data tidak valid ditolak sebelum menyentuh database
+setSession({
+  id: "pj-2",
+  name: "PJ Dua",
+  email: "pj2@pertanian.go.id",
+  role: "USER",
+  mustChangePassword: false,
+  isActive: true,
+});
+const mintaPendek = await mintaAksesLapor({ ...mintaInput, alasan: "x" });
+assert.equal(mintaPendek.success, false);
+assert.equal(mintaPendek.success === false && mintaPendek.error, "Alasan minimal 5 karakter.");
+const mintaBulanSalah = await mintaAksesLapor({ ...mintaInput, periodeBulan: 13 });
+assert.equal(mintaBulanSalah.success, false);
+
+// Kasus 5: PJ tidak boleh menyetujui atau menolak permintaan
+const setujuiPj = await setujuiPermintaanAkses({ requestId: "req-1", durasiHari: 3 });
+assert.equal(setujuiPj.success, false);
+assert.equal(setujuiPj.success === false && setujuiPj.error, "Hanya admin yang bisa mengatur akses lapor.");
+const tolakPj = await tolakPermintaanAkses({ requestId: "req-1", catatan: "Tidak bisa" });
+assert.equal(tolakPj.success, false);
+assert.equal(tolakPj.success === false && tolakPj.error, "Hanya admin yang bisa mengatur akses lapor.");
+
+// Kasus 6: admin yang wajib ganti password ditolak
+setSession({
+  id: "admin-must-change-2",
+  name: "Admin Baru",
+  email: "admin.baru2@pertanian.go.id",
+  role: "ADMIN",
+  mustChangePassword: true,
+  isActive: true,
+});
+const setujuiBlocked = await setujuiPermintaanAkses({ requestId: "req-1", durasiHari: 3 });
+assert.equal(setujuiBlocked.success, false);
+assert.equal(setujuiBlocked.success === false && setujuiBlocked.error, "Wajib ganti kata sandi terlebih dahulu.");
+
+// Kasus 7: admin dengan data tidak valid ditolak sebelum menyentuh database
+setSession({
+  id: "admin-3",
+  name: "Admin",
+  email: "admin3@pertanian.go.id",
+  role: "ADMIN",
+  mustChangePassword: false,
+  isActive: true,
+});
+const setujuiDurasi = await setujuiPermintaanAkses({ requestId: "req-1", durasiHari: 99 });
+assert.equal(setujuiDurasi.success, false);
+assert.equal(setujuiDurasi.success === false && setujuiDurasi.error, "Durasi maksimal 30 hari.");
+const tolakTanpaCatatan = await tolakPermintaanAkses({ requestId: "req-1", catatan: "" });
+assert.equal(tolakTanpaCatatan.success, false);
+assert.equal(
+  tolakTanpaCatatan.success === false && tolakTanpaCatatan.error,
+  "Catatan penolakan minimal 3 karakter.",
+);
+const setujuiTanpaId = await setujuiPermintaanAkses({ requestId: "", durasiHari: 3 });
+assert.equal(setujuiTanpaId.success, false);
+
+console.log("permintaan akses lapor security checks passed");

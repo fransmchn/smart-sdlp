@@ -65,3 +65,24 @@ const NAMA_BULAN = [
 export function formatPeriodeLabel(bulan: number, tahun: number): string {
   return `${NAMA_BULAN[bulan - 1] ?? bulan} ${tahun}`;
 }
+
+export type AccessRequestStatusValue = "PENDING" | "APPROVED" | "REJECTED";
+
+export type AccessRequestState =
+  | "hidden" // tidak perlu meminta akses (belum lewat batas waktu, sudah dibuka, atau diblokir)
+  | "can-request" // form terkunci, PJ boleh mengajukan permintaan
+  | "pending" // permintaan sudah dikirim dan menunggu admin
+  | "rejected"; // permintaan terakhir ditolak, PJ boleh mengajukan lagi
+
+// Menentukan apa yang ditampilkan kepada PJ pada form yang terkunci.
+export function getAccessRequestState(input: {
+  deadlinePassed: boolean;
+  accessActive: boolean;
+  blocked: boolean;
+  latestRequestStatus?: AccessRequestStatusValue | null;
+}): AccessRequestState {
+  if (!input.deadlinePassed || input.accessActive || input.blocked) return "hidden";
+  if (input.latestRequestStatus === "PENDING") return "pending";
+  if (input.latestRequestStatus === "REJECTED") return "rejected";
+  return "can-request";
+}

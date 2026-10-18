@@ -6,7 +6,8 @@ import {
   formatReportDeadline,
   isReportDeadlinePassed,
 } from "@/utils/reportDeadline";
-import { isReportAccessActive } from "@/utils/reportAccess";
+import { formatPeriodeLabel, isReportAccessActive } from "@/utils/reportAccess";
+import { PermintaanAksesPanel } from "@/features/akses-lapor/components/permintaan-akses-panel";
 import { getReportDeadline as getReportDeadlineSettings } from "@/features/app-settings/actions";
 import {
   MasterArsipSMARTPage,
@@ -336,18 +337,41 @@ export default async function ArsipPage({
       return tMb !== tMa ? tMb - tMa : bMb - bMa;
     });
 
+  // Permintaan akses lapor dari PJ yang menunggu keputusan admin.
+  const permintaanMenunggu = await prisma.reportAccessRequest.findMany({
+    where: { status: "PENDING" },
+    orderBy: { createdAt: "asc" },
+    include: {
+      kegiatan: { select: { kode: true, nama: true } },
+      requestedBy: { select: { name: true, email: true } },
+    },
+  });
+  const permintaanItems = permintaanMenunggu.map((p) => ({
+    id: p.id,
+    kode: p.kegiatan.kode,
+    nama: p.kegiatan.nama,
+    periode: formatPeriodeLabel(p.periodeBulan, p.periodeTahun),
+    pjNama: p.requestedBy.name,
+    pjEmail: p.requestedBy.email,
+    alasan: p.reason,
+    dibuatPada: formatReportDeadline(p.createdAt),
+  }));
+
   return (
-    <MasterArsipSMARTPage
-      arsipList={paginatedItems}
-      stats={{ total: totalCount, sudah: sudahCount, belum: belumCount }}
-      pagination={{
-        page,
-        totalPages,
-        total: totalFiltered,
-        pageSize: PAGE_SIZE,
-      }}
-      periodOptions={periodOptions}
-      currentParams={{ q, periode: periodeParam, status: statusParam }}
-    />
+    <div className="space-y-5">
+      <PermintaanAksesPanel items={permintaanItems} />
+      <MasterArsipSMARTPage
+        arsipList={paginatedItems}
+        stats={{ total: totalCount, sudah: sudahCount, belum: belumCount }}
+        pagination={{
+          page,
+          totalPages,
+          total: totalFiltered,
+          pageSize: PAGE_SIZE,
+        }}
+        periodOptions={periodOptions}
+        currentParams={{ q, periode: periodeParam, status: statusParam }}
+      />
+    </div>
   );
 }
