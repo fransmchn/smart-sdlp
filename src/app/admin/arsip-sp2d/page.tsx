@@ -7,6 +7,7 @@ import {
   isReportDeadlinePassed,
 } from "@/utils/reportDeadline";
 import { formatPeriodeLabel, isReportAccessActive } from "@/utils/reportAccess";
+import { formatWaktuWib, isLaporanRevised } from "@/utils/waktu";
 import { PermintaanAksesPanel } from "@/features/akses-lapor/components/permintaan-akses-panel";
 import { getReportDeadline as getReportDeadlineSettings } from "@/features/app-settings/actions";
 import {
@@ -129,14 +130,10 @@ export default async function ArsipPage({
         jenis: l.kegiatan.jenis || "APBN",
         pjNama: l.submittedBy?.name || l.kegiatan.pj?.name || "PJ Kegiatan",
         pjEmail: l.submittedBy?.email || l.kegiatan.pj?.email || "-",
-        waktuUpload:
-          l.createdAt.toLocaleString("id-ID", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }) + " WIB",
+        waktuUpload: formatWaktuWib(l.createdAt),
+        waktuRevisi: isLaporanRevised(l.createdAt, l.updatedAt)
+          ? formatWaktuWib(l.updatedAt)
+          : null,
         status: "SUDAH_UPLOAD",
         pagu: Number(l.kegiatan.pagu),
         realisasi: Number(l.realisasi),
@@ -187,14 +184,10 @@ export default async function ArsipPage({
         jenis: l.kegiatan.jenis || "APBN",
         pjNama: l.submittedBy?.name || l.kegiatan.pj?.name || "PJ Kegiatan",
         pjEmail: l.submittedBy?.email || l.kegiatan.pj?.email || "-",
-        waktuUpload:
-          l.createdAt.toLocaleString("id-ID", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }) + " WIB",
+        waktuUpload: formatWaktuWib(l.createdAt),
+        waktuRevisi: isLaporanRevised(l.createdAt, l.updatedAt)
+          ? formatWaktuWib(l.updatedAt)
+          : null,
         status: "SUDAH_UPLOAD",
         pagu: Number(l.kegiatan.pagu),
         realisasi: Number(l.realisasi),

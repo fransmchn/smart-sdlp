@@ -22,6 +22,8 @@ export interface ArsipItem {
   pjNama: string;
   pjEmail: string;
   waktuUpload: string;
+  // Waktu revisi terakhir bila laporan pernah dikirim ulang.
+  waktuRevisi?: string | null;
   status: "SUDAH_UPLOAD" | "BELUM_UPLOAD";
   pagu: number;
   realisasi: number;
@@ -404,6 +406,11 @@ export function MasterArsipSMARTPage({
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap text-slate-600">
                       {item.waktuUpload}
+                      {item.waktuRevisi && (
+                        <div className="mt-0.5 text-[10.5px] font-semibold text-amber-700">
+                          Direvisi {item.waktuRevisi}
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-center whitespace-nowrap">
                       {item.status === "SUDAH_UPLOAD" ? (
