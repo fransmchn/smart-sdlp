@@ -8,6 +8,7 @@ import { generateSmartReportExcel } from "@/utils/excelExport";
 import { Icons } from "@/utils/formatters";
 import { deleteLaporan, ingatkanPJ } from "@/features/arsip/actions";
 import { bukaAksesLapor, cabutAksesLapor } from "@/features/akses-lapor/actions";
+import { getReminderMode } from "@/utils/reportAccess";
 
 export interface ArsipItem {
   id: string;
@@ -215,10 +216,19 @@ export function MasterArsipSMARTPage({
     });
   };
 
+  // Jenis pengingat yang masuk akal untuk baris ini (lihat getReminderMode).
+  const reminderModeOf = (item: ArsipItem) =>
+    getReminderMode({
+      hasReport: item.status === "SUDAH_UPLOAD",
+      blocked: item.statusAnggaran.toUpperCase() === "DIBLOKIR",
+      deadlinePassed: Boolean(item.deadlinePassed),
+      accessActive: Boolean(item.aksesId),
+    });
+
   const handleSendReminder = (item: ArsipItem) => {
     setRemindingId(item.id);
     startTransition(async () => {
-      const res = await ingatkanPJ(item.kegiatanId, item.periode);
+      const res = await ingatkanPJ(item.kegiatanId, item.periodeBulan, item.periodeTahun);
       if (res.success) {
         toast.success(
           res.message || `Email pengingat berhasil dikirim ke ${item.pjNama}!`,
@@ -472,10 +482,11 @@ export function MasterArsipSMARTPage({
                             </svg>
                           </button>
                         </div>
-                      ) : (
+                      ) : reminderModeOf(item) === "none" ? null : (
                         <button
                           onClick={() => handleSendReminder(item)}
                           disabled={isPending && remindingId === item.id}
+                          title="Kirim pengingat ke PJ."
                           className="px-2.5 py-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300 hover:bg-amber-100 rounded-md transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1 shadow-2xs"
                         >
                           {isPending && remindingId === item.id ? (
@@ -503,7 +514,12 @@ export function MasterArsipSMARTPage({
                         </div>
                       ) : item.deadlinePassed &&
                         item.statusAnggaran.toUpperCase() !== "DIBLOKIR" ? (
-                        <div className="mt-1.5">
+                        <div className="mt-1.5 flex flex-col items-center gap-1">
+                          {item.status === "BELUM_UPLOAD" && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                              Terlambat
+                            </span>
+                          )}
                           <button
                             onClick={() => openAccessModal(item)}
                             className="px-2.5 py-1 text-[11px] font-bold text-sky-800 bg-sky-50 border border-sky-300 hover:bg-sky-100 rounded-md transition cursor-pointer shadow-2xs"
@@ -713,6 +729,15 @@ export function MasterArsipSMARTPage({
               />
             </div>
 
+            {selectedItem?.aksesSampai && (
+              <p className="rounded-md border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-900">
+                Akses lapor periode ini masih dibuka sampai{" "}
+                <strong>{selectedItem.aksesSampai}</strong>.{" "}
+                {allowRefill && refillApplicable
+                  ? "Akses akan diperbarui menjadi 7 hari dari sekarang."
+                  : "Karena PJ tidak diizinkan mengisi ulang, akses ini akan ditutup."}
+              </p>
+            )}
             {refillApplicable ? (
               <label className="flex items-start gap-2 rounded-md border border-sky-200 bg-sky-50 p-2.5 text-xs text-sky-900 cursor-pointer">
                 <input

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   canSubmitReport,
+  getReminderMode,
   getAccessRequestState,
   computeAccessOpenedUntil,
   formatPeriodeLabel,
@@ -65,5 +66,14 @@ assert.equal(getAccessRequestState({ ...dasar, latestRequestStatus: "PENDING" })
 assert.equal(getAccessRequestState({ ...dasar, latestRequestStatus: "REJECTED" }), "rejected");
 // Permintaan lama yang sudah disetujui tidak menghalangi permintaan baru setelah akses habis.
 assert.equal(getAccessRequestState({ ...dasar, latestRequestStatus: "APPROVED" }), "can-request");
+
+// Jenis pengingat pada baris arsip.
+const belum = { hasReport: false, blocked: false, deadlinePassed: false, accessActive: false };
+assert.equal(getReminderMode(belum), "normal");
+assert.equal(getReminderMode({ ...belum, hasReport: true }), "none");
+assert.equal(getReminderMode({ ...belum, blocked: true }), "none");
+assert.equal(getReminderMode({ ...belum, deadlinePassed: true }), "none");
+assert.equal(getReminderMode({ ...belum, deadlinePassed: true, accessActive: true }), "normal");
+assert.equal(getReminderMode({ ...belum, deadlinePassed: true, hasReport: true }), "none");
 
 console.log("reportAccess checks passed");

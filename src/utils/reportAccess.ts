@@ -86,3 +86,22 @@ export function getAccessRequestState(input: {
   if (input.latestRequestStatus === "REJECTED") return "rejected";
   return "can-request";
 }
+
+export type ReminderMode =
+  | "none" // tidak perlu mengingatkan
+  | "normal"; // PJ masih bisa melapor, jadi pengingat berguna
+
+// Menentukan apakah pengingat masuk akal untuk sebuah baris arsip. Pengingat
+// tidak berguna bila laporan sudah ada, kegiatan diblokir, atau batas waktu
+// sudah lewat tanpa akses terbuka (PJ tidak bisa mengisi, jadi admin perlu
+// membuka akses dulu).
+export function getReminderMode(input: {
+  hasReport: boolean;
+  blocked: boolean;
+  deadlinePassed: boolean;
+  accessActive: boolean;
+}): ReminderMode {
+  if (input.hasReport || input.blocked) return "none";
+  if (input.deadlinePassed && !input.accessActive) return "none";
+  return "normal";
+}

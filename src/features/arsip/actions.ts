@@ -6,9 +6,15 @@ import { getActionSession } from "@/lib/active-session";
 import { createUserNotification } from "@/lib/notifications";
 import { recordAdminAudit } from "@/lib/audit";
 import { buildLaporanSnapshot } from "@/utils/laporanSnapshot";
-import { computeAccessOpenedUntil } from "@/utils/reportAccess";
+import {
+  computeAccessOpenedUntil,
+  formatPeriodeLabel,
+  getReminderMode,
+  isReportAccessActive,
+} from "@/utils/reportAccess";
 import {
   formatReportDeadline,
+  getReportDeadline,
   isReportDeadlinePassed,
 } from "@/utils/reportDeadline";
 
@@ -179,7 +185,38 @@ export async function deleteLaporan(
         });
       }
 
-      // 4. Bila diizinkan, buka akses lapor supaya PJ bisa mengisi ulang laporan ini.
+      // 4. Tanpa izin isi ulang: tutup akses lapor yang masih terbuka untuk kegiatan dan bulan ini
+      //    (misalnya dari penghapusan sebelumnya), supaya PJ tidak bisa mengisi ulang.
+      if (!izinkanIsiUlang) {
+        const aksesLama = await tx.reportAccessOverride.findUnique({
+          where: {
+            kegiatanId_periodeBulan_periodeTahun: {
+              kegiatanId: target.kegiatanId,
+              periodeBulan: target.periodeBulan,
+              periodeTahun: target.periodeTahun,
+            },
+          },
+        });
+        if (aksesLama && isReportAccessActive(aksesLama)) {
+          await tx.reportAccessOverride.update({
+            where: { id: aksesLama.id },
+            data: { revokedAt: new Date() },
+          });
+          await recordAdminAudit(
+            {
+              action: "REVOKE_REPORT_ACCESS",
+              adminName: session.user.name,
+              adminEmail: session.user.email,
+              kodeKegiatan: target.kegiatan.kode,
+              namaKegiatan: target.kegiatan.nama,
+              alasan: `Cabut akses ${namaPeriode} (otomatis: laporan dihapus tanpa izin isi ulang). Alasan hapus: ${alasan.trim()}`,
+            },
+            tx,
+          );
+        }
+      }
+
+      // 5. Bila diizinkan, buka akses lapor supaya PJ bisa mengisi ulang laporan ini.
       if (aksesSampai) {
         await tx.reportAccessOverride.upsert({
           where: {
@@ -235,7 +272,15 @@ export async function deleteLaporan(
   }
 }
 
-export async function ingatkanPJ(kegiatanId: string, periode: string) {
+// Mengirim pengingat ke PJ, hanya bila PJ memang masih bisa melapor:
+// - batas waktu belum lewat, atau akses lapor sedang dibuka: dikirim
+// - batas waktu lewat tanpa akses: ditolak (admin perlu membuka akses dulu)
+// - sudah ada laporan, atau kegiatan diblokir: ditolak
+export async function ingatkanPJ(
+  kegiatanId: string,
+  periodeBulan: number,
+  periodeTahun: number,
+) {
   let session;
   try {
     session = await getActionSession();
@@ -250,6 +295,16 @@ export async function ingatkanPJ(kegiatanId: string, periode: string) {
       success: false,
       error: "Hanya Admin yang berhak mengirim email pengingat.",
     };
+  }
+  if (
+    !Number.isInteger(periodeBulan) ||
+    periodeBulan < 1 ||
+    periodeBulan > 12 ||
+    !Number.isInteger(periodeTahun) ||
+    periodeTahun < 2020 ||
+    periodeTahun > 2100
+  ) {
+    return { success: false, error: "Periode tidak valid." };
   }
 
   try {
@@ -272,17 +327,71 @@ export async function ingatkanPJ(kegiatanId: string, periode: string) {
       };
     }
 
+    const periode = formatPeriodeLabel(periodeBulan, periodeTahun);
+    const periodeKey = {
+      kegiatanId,
+      periodeBulan,
+      periodeTahun,
+    };
+    const [laporan, akses, settings] = await Promise.all([
+      prisma.laporan.findUnique({
+        where: { kegiatanId_periodeBulan_periodeTahun: periodeKey },
+        select: { id: true },
+      }),
+      prisma.reportAccessOverride.findUnique({
+        where: { kegiatanId_periodeBulan_periodeTahun: periodeKey },
+      }),
+      prisma.appSettings.findFirst(),
+    ]);
+    const deadlineSettings = {
+      day: settings?.reportDeadlineDay ?? 25,
+      time: settings?.reportDeadlineTime ?? "23:59",
+    };
+    const deadlinePassed = isReportDeadlinePassed(periodeTahun, periodeBulan, deadlineSettings);
+    const accessActive = isReportAccessActive(akses);
+    const mode = getReminderMode({
+      hasReport: Boolean(laporan),
+      blocked: kegiatan.statusAnggaran === "DIBLOKIR",
+      deadlinePassed,
+      accessActive,
+    });
+    if (mode === "none") {
+      return {
+        success: false,
+        error: laporan
+          ? "Laporan periode ini sudah ada, PJ tidak perlu diingatkan."
+          : kegiatan.statusAnggaran === "DIBLOKIR"
+            ? "Kegiatan ini sedang diblokir, PJ tidak dapat melapor."
+            : "Batas waktu periode ini sudah lewat. Buka akses lapor terlebih dahulu agar PJ bisa melapor, lalu kirim pengingat.",
+      };
+    }
+
+    const batasWaktu = formatReportDeadline(
+      getReportDeadline(periodeTahun, periodeBulan, deadlineSettings),
+    );
     const { buildEmailTemplate, escapeHtml, sendMail } = await import("@/lib/mailer");
 
     const safePjName = escapeHtml(pjName);
     const safeKode = escapeHtml(kegiatan.kode);
     const safeNama = escapeHtml(kegiatan.nama);
     const safePeriode = escapeHtml(periode);
-    const dashboardUrl = `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000"}/dashboard`;
+    const linkInput = `/input?kode=${encodeURIComponent(kegiatan.kode)}`;
+    const inputUrl = `${process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000"}${linkInput}`;
+
+    const tabel = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr><td style="padding:8px 0;color:#64748b;width:140px;">Kode Kegiatan</td><td style="padding:8px 0;font-weight:bold;color:#143D32;">${safeKode}</td></tr><tr><td style="padding:8px 0;color:#64748b;">Nama Kegiatan</td><td style="padding:8px 0;font-weight:600;">${safeNama}</td></tr><tr><td style="padding:8px 0;color:#64748b;">Periode</td><td style="padding:8px 0;font-weight:600;">${safePeriode}</td></tr><tr><td style="padding:8px 0;color:#64748b;">Batas waktu</td><td style="padding:8px 0;font-weight:600;">${escapeHtml(batasWaktu)}</td></tr><tr><td style="padding:8px 0;color:#64748b;">Status</td><td style="padding:8px 0;font-weight:bold;color:#e11d48;">BELUM DIUNGGAH</td></tr></table>`;
+    const aksesInfo =
+      accessActive && akses
+        ? `<p>Admin telah membuka akses lapor untuk periode ini sampai <strong>${escapeHtml(formatReportDeadline(akses.openedUntil))}</strong>.</p>`
+        : "";
+
     const mailResult = await sendMail({
       to: pjEmail,
       subject: `[PENGINGAT] Unggah Laporan - ${safeKode} (${safePeriode})`,
-      html: buildEmailTemplate("Pelaporan Capaian Kegiatan", `<p>Yth. Bapak/Ibu <strong>${safePjName}</strong>,</p><p>Berkas <strong>Laporan</strong> untuk kegiatan Anda belum terunggah.</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr><td style="padding:8px 0;color:#64748b;width:140px;">Kode Kegiatan</td><td style="padding:8px 0;font-weight:bold;color:#143D32;">${safeKode}</td></tr><tr><td style="padding:8px 0;color:#64748b;">Nama Kegiatan</td><td style="padding:8px 0;font-weight:600;">${safeNama}</td></tr><tr><td style="padding:8px 0;color:#64748b;">Periode</td><td style="padding:8px 0;font-weight:600;">${safePeriode}</td></tr><tr><td style="padding:8px 0;color:#64748b;">Status</td><td style="padding:8px 0;font-weight:bold;color:#e11d48;">BELUM DIUNGGAH</td></tr></table>`, { label: "Buka SMART BRMP SDLP", url: dashboardUrl }),
+      html: buildEmailTemplate(
+        "Pelaporan Capaian Kegiatan",
+        `<p>Yth. Bapak/Ibu <strong>${safePjName}</strong>,</p><p>Berkas <strong>Laporan</strong> untuk kegiatan Anda belum terunggah.</p>${tabel}${aksesInfo}`,
+        { label: "Buka SMART BRMP SDLP", url: inputUrl },
+      ),
       text: `Yth. ${pjName}, mohon segera mengunggah Laporan untuk kegiatan ${kegiatan.kode} (${kegiatan.nama}) periode ${periode}.`,
     });
 
@@ -300,7 +409,7 @@ export async function ingatkanPJ(kegiatanId: string, periode: string) {
           type: "REPORT_REMINDER",
           title: "Pengingat laporan",
           message: `Mohon isi laporan kegiatan ${kegiatan.kode} untuk periode ${periode}.`,
-          href: "/input",
+          href: linkInput,
         });
       } catch (notificationError) {
         console.error("Gagal membuat notifikasi pengingat:", notificationError);
@@ -319,4 +428,3 @@ export async function ingatkanPJ(kegiatanId: string, periode: string) {
     };
   }
 }
-
