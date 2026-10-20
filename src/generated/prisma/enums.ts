@@ -43,3 +43,12 @@ export const KategoriDokumen = {
 } as const
 
 export type KategoriDokumen = (typeof KategoriDokumen)[keyof typeof KategoriDokumen]
+
+
+export const AccessRequestStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED'
+} as const
+
+export type AccessRequestStatus = (typeof AccessRequestStatus)[keyof typeof AccessRequestStatus]

@@ -8,7 +8,7 @@ export interface ActiveSessionOptions {
 
 export interface ActiveSessionUser {
   id: string;
-  name?: string | null;
+  name: string;
   email: string;
   role?: string | null;
   isActive?: boolean;

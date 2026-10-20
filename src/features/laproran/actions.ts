@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getActionSession } from "@/lib/active-session";
 import { createUserNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+import { canSubmitReport } from "@/utils/reportAccess";
 import {
   formatReportDeadline,
   getReportDeadline,
@@ -88,10 +89,26 @@ export async function submitLaporan(
           data.periodeBulan,
           deadlineSettings,
         );
-        if (Date.now() >= deadline.getTime()) {
+        // Setelah batas waktu, laporan hanya bisa dikirim bila admin sudah
+        // membuka akses lapor untuk kegiatan dan bulan ini.
+        const aksesDibuka = await tx.reportAccessOverride.findUnique({
+          where: {
+            kegiatanId_periodeBulan_periodeTahun: {
+              kegiatanId: data.kegiatanId,
+              periodeBulan: data.periodeBulan,
+              periodeTahun: data.periodeTahun,
+            },
+          },
+        });
+        if (
+          !canSubmitReport({
+            deadlinePassed: Date.now() >= deadline.getTime(),
+            access: aksesDibuka,
+          })
+        ) {
           return {
             success: false,
-            error: `Batas waktu pelaporan periode ini sudah lewat pada ${formatReportDeadline(deadline)}. Hubungi admin jika perlu revisi.`,
+            error: `Batas waktu pelaporan periode ini sudah lewat pada ${formatReportDeadline(deadline)}. Hubungi admin untuk meminta akses lapor.`,
           };
         }
 

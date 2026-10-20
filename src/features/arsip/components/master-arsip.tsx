@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { generateSmartReportExcel } from "@/utils/excelExport";
 import { Icons } from "@/utils/formatters";
 import { deleteLaporan, ingatkanPJ } from "@/features/arsip/actions";
+import { bukaAksesLapor, cabutAksesLapor } from "@/features/akses-lapor/actions";
+import { getReminderMode } from "@/utils/reportAccess";
 
 export interface ArsipItem {
   id: string;
@@ -21,6 +23,8 @@ export interface ArsipItem {
   pjNama: string;
   pjEmail: string;
   waktuUpload: string;
+  // Waktu revisi terakhir bila laporan pernah dikirim ulang.
+  waktuRevisi?: string | null;
   status: "SUDAH_UPLOAD" | "BELUM_UPLOAD";
   pagu: number;
   realisasi: number;
@@ -28,6 +32,11 @@ export interface ArsipItem {
   fisik: number;
   statusAnggaran: string;
   uraian?: string | null;
+  // Diisi oleh halaman arsip: apakah batas waktu periode ini sudah lewat, dan
+  // akses lapor yang sedang dibuka admin (bila ada).
+  deadlinePassed?: boolean;
+  aksesId?: string | null;
+  aksesSampai?: string | null;
 }
 
 interface MasterArsipSMARTPageProps {
@@ -82,6 +91,14 @@ export function MasterArsipSMARTPage({
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ArsipItem | null>(null);
   const [deleteReason, setDeleteReason] = useState("");
+  const [allowRefill, setAllowRefill] = useState(true);
+
+  // Modal Buka Akses Lapor
+  const [accessModalOpen, setAccessModalOpen] = useState(false);
+  const [accessItem, setAccessItem] = useState<ArsipItem | null>(null);
+  const [accessDays, setAccessDays] = useState("3");
+  const [accessReason, setAccessReason] = useState("");
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   const updateQueryParams = (
     updates: Record<string, string | number | null>,
@@ -111,8 +128,16 @@ export function MasterArsipSMARTPage({
   const openDeleteModal = (item: ArsipItem) => {
     setSelectedItem(item);
     setDeleteReason("");
+    setAllowRefill(true);
     setDeleteModalOpen(true);
   };
+
+  // Pengisian ulang hanya relevan bila batas waktu sudah lewat dan kegiatan tidak diblokir.
+  // Bila batas waktu belum lewat, PJ memang masih bisa mengisi ulang tanpa akses khusus.
+  const refillApplicable = Boolean(
+    selectedItem?.deadlinePassed &&
+      selectedItem.statusAnggaran.toUpperCase() !== "DIBLOKIR",
+  );
 
   const handleConfirmDelete = () => {
     if (!selectedItem || !selectedItem.laporanId) return;
@@ -125,10 +150,14 @@ export function MasterArsipSMARTPage({
       const res = await deleteLaporan(
         selectedItem.laporanId!,
         deleteReason.trim(),
+        refillApplicable && allowRefill,
       );
       if (res.success) {
         toast.success(
-          `Laporan "${selectedItem.nama}" periode ${selectedItem.periode} berhasil dihapus.`,
+          `Laporan "${selectedItem.nama}" periode ${selectedItem.periode} berhasil dihapus.` +
+            (res.aksesDibukaSampai
+              ? ` PJ dapat mengisi ulang sampai ${res.aksesDibukaSampai}.`
+              : ""),
         );
         setDeleteModalOpen(false);
         setSelectedItem(null);
@@ -139,10 +168,67 @@ export function MasterArsipSMARTPage({
     });
   };
 
+  const openAccessModal = (item: ArsipItem) => {
+    setAccessItem(item);
+    setAccessDays("3");
+    setAccessReason("");
+    setAccessModalOpen(true);
+  };
+
+  const handleConfirmAccess = () => {
+    if (!accessItem) return;
+    if (accessReason.trim().length < 5) {
+      toast.error("Alasan wajib diisi (minimal 5 karakter).");
+      return;
+    }
+    startTransition(async () => {
+      const res = await bukaAksesLapor({
+        kegiatanId: accessItem.kegiatanId,
+        periodeBulan: accessItem.periodeBulan,
+        periodeTahun: accessItem.periodeTahun,
+        durasiHari: Number(accessDays),
+        alasan: accessReason.trim(),
+      });
+      if (res.success) {
+        toast.success(res.message);
+        setAccessModalOpen(false);
+        setAccessItem(null);
+        router.refresh();
+      } else {
+        toast.error(res.error);
+      }
+    });
+  };
+
+  const handleRevokeAccess = (item: ArsipItem) => {
+    if (!item.aksesId) return;
+    const accessId = item.aksesId;
+    setRevokingId(item.id);
+    startTransition(async () => {
+      const res = await cabutAksesLapor(accessId);
+      if (res.success) {
+        toast.success(res.message);
+        router.refresh();
+      } else {
+        toast.error(res.error);
+      }
+      setRevokingId(null);
+    });
+  };
+
+  // Jenis pengingat yang masuk akal untuk baris ini (lihat getReminderMode).
+  const reminderModeOf = (item: ArsipItem) =>
+    getReminderMode({
+      hasReport: item.status === "SUDAH_UPLOAD",
+      blocked: item.statusAnggaran.toUpperCase() === "DIBLOKIR",
+      deadlinePassed: Boolean(item.deadlinePassed),
+      accessActive: Boolean(item.aksesId),
+    });
+
   const handleSendReminder = (item: ArsipItem) => {
     setRemindingId(item.id);
     startTransition(async () => {
-      const res = await ingatkanPJ(item.kegiatanId, item.periode);
+      const res = await ingatkanPJ(item.kegiatanId, item.periodeBulan, item.periodeTahun);
       if (res.success) {
         toast.success(
           res.message || `Email pengingat berhasil dikirim ke ${item.pjNama}!`,
@@ -343,6 +429,11 @@ export function MasterArsipSMARTPage({
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap text-slate-600">
                       {item.waktuUpload}
+                      {item.waktuRevisi && (
+                        <div className="mt-0.5 text-[10.5px] font-semibold text-amber-700">
+                          Direvisi {item.waktuRevisi}
+                        </div>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-center whitespace-nowrap">
                       {item.status === "SUDAH_UPLOAD" ? (
@@ -391,10 +482,11 @@ export function MasterArsipSMARTPage({
                             </svg>
                           </button>
                         </div>
-                      ) : (
+                      ) : reminderModeOf(item) === "none" ? null : (
                         <button
                           onClick={() => handleSendReminder(item)}
                           disabled={isPending && remindingId === item.id}
+                          title="Kirim pengingat ke PJ."
                           className="px-2.5 py-1 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300 hover:bg-amber-100 rounded-md transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1 shadow-2xs"
                         >
                           {isPending && remindingId === item.id ? (
@@ -407,6 +499,36 @@ export function MasterArsipSMARTPage({
                           )}
                         </button>
                       )}
+                      {item.aksesId ? (
+                        <div className="mt-1.5 flex items-center justify-center gap-1.5 text-[10.5px]">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded font-semibold bg-sky-50 text-sky-800 border border-sky-200">
+                            Akses dibuka s.d. {item.aksesSampai}
+                          </span>
+                          <button
+                            onClick={() => handleRevokeAccess(item)}
+                            disabled={isPending && revokingId === item.id}
+                            className="px-2 py-0.5 font-bold text-rose-700 hover:bg-rose-50 border border-rose-200 rounded transition cursor-pointer disabled:opacity-50"
+                          >
+                            {isPending && revokingId === item.id ? "Mencabut..." : "Cabut"}
+                          </button>
+                        </div>
+                      ) : item.deadlinePassed &&
+                        item.statusAnggaran.toUpperCase() !== "DIBLOKIR" ? (
+                        <div className="mt-1.5 flex flex-col items-center gap-1">
+                          {item.status === "BELUM_UPLOAD" && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                              Terlambat
+                            </span>
+                          )}
+                          <button
+                            onClick={() => openAccessModal(item)}
+                            className="px-2.5 py-1 text-[11px] font-bold text-sky-800 bg-sky-50 border border-sky-300 hover:bg-sky-100 rounded-md transition cursor-pointer shadow-2xs"
+                            title="Batas waktu sudah lewat. Buka akses lapor untuk PJ."
+                          >
+                            Buka Akses
+                          </button>
+                        </div>
+                      ) : null}
                     </td>
                   </tr>
                 ))
@@ -472,6 +594,87 @@ export function MasterArsipSMARTPage({
         </div>
       </div>
 
+      {/* ── Modal Buka Akses Lapor ── */}
+      {accessModalOpen && accessItem && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl border border-slate-200 max-w-md w-full p-5 space-y-4 animate-in zoom-in-95 duration-150">
+            <div>
+              <h3 className="text-base font-bold text-slate-800">
+                Buka Akses Lapor?
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Batas waktu periode <strong>{accessItem.periode}</strong> sudah
+                lewat. Dengan membuka akses, PJ bisa mengirim atau merevisi
+                laporan periode ini untuk sementara. Setelah waktunya habis,
+                akses menutup sendiri. Tindakan ini dicatat di Log Audit.
+              </p>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded border border-slate-200 space-y-1 text-xs text-slate-700">
+              <p>
+                <strong>Kegiatan:</strong> {accessItem.kode} - {accessItem.nama}
+              </p>
+              <p>
+                <strong>Penanggung Jawab:</strong> {accessItem.pjNama} (
+                {accessItem.pjEmail})
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-800">
+                Dibuka selama
+              </label>
+              <select
+                value={accessDays}
+                onChange={(e) => setAccessDays(e.target.value)}
+                className="w-full p-2 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500"
+              >
+                <option value="1">1 hari</option>
+                <option value="3">3 hari</option>
+                <option value="7">7 hari</option>
+                <option value="14">14 hari</option>
+                <option value="30">30 hari</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-800">
+                Alasan <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                rows={3}
+                value={accessReason}
+                onChange={(e) => setAccessReason(e.target.value)}
+                placeholder="Contoh: PJ sedang dinas luar kota, laporan SP2D perlu dilengkapi..."
+                className="w-full p-2.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setAccessModalOpen(false)}
+                disabled={isPending}
+                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-md transition cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmAccess}
+                disabled={isPending || accessReason.trim().length < 5}
+                className="px-4 py-1.5 text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 disabled:opacity-50 rounded-md transition cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+              >
+                {isPending && (
+                  <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                )}
+                {isPending ? "Membuka..." : "Ya, Buka Akses"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Modal Konfirmasi Hapus Laporan dengan Alasan Audit Log ── */}
       {deleteModalOpen && selectedItem && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -525,6 +728,36 @@ export function MasterArsipSMARTPage({
                 className="w-full p-2.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-rose-500"
               />
             </div>
+
+            {selectedItem?.aksesSampai && (
+              <p className="rounded-md border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-900">
+                Akses lapor periode ini masih dibuka sampai{" "}
+                <strong>{selectedItem.aksesSampai}</strong>.{" "}
+                {allowRefill && refillApplicable
+                  ? "Akses akan diperbarui menjadi 7 hari dari sekarang."
+                  : "Karena PJ tidak diizinkan mengisi ulang, akses ini akan ditutup."}
+              </p>
+            )}
+            {refillApplicable ? (
+              <label className="flex items-start gap-2 rounded-md border border-sky-200 bg-sky-50 p-2.5 text-xs text-sky-900 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allowRefill}
+                  onChange={(e) => setAllowRefill(e.target.checked)}
+                  className="mt-0.5 h-3.5 w-3.5 cursor-pointer"
+                />
+                <span>
+                  <strong>Izinkan PJ mengisi ulang.</strong> Batas waktu periode ini
+                  sudah lewat, jadi akses lapor dibuka selama 7 hari agar PJ bisa
+                  mengirim laporan pengganti.
+                </span>
+              </label>
+            ) : (
+              <p className="text-[11px] text-slate-500">
+                PJ masih dapat mengisi ulang laporan ini selama batas waktu
+                periodenya belum lewat.
+              </p>
+            )}
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
               <button

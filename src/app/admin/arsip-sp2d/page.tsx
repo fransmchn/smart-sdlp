@@ -3,6 +3,14 @@ import { getActiveSession } from "@/lib/active-session";
 import { prisma } from "@/lib/prisma";
 import { aggregateActivityReports } from "@/utils/reportAggregation";
 import {
+  formatReportDeadline,
+  isReportDeadlinePassed,
+} from "@/utils/reportDeadline";
+import { formatPeriodeLabel, isReportAccessActive } from "@/utils/reportAccess";
+import { formatWaktuWib, isLaporanRevised } from "@/utils/waktu";
+import { PermintaanAksesPanel } from "@/features/akses-lapor/components/permintaan-akses-panel";
+import { getReportDeadline as getReportDeadlineSettings } from "@/features/app-settings/actions";
+import {
   MasterArsipSMARTPage,
   type ArsipItem,
 } from "@/features/arsip/components/master-arsip";
@@ -122,14 +130,10 @@ export default async function ArsipPage({
         jenis: l.kegiatan.jenis || "APBN",
         pjNama: l.submittedBy?.name || l.kegiatan.pj?.name || "PJ Kegiatan",
         pjEmail: l.submittedBy?.email || l.kegiatan.pj?.email || "-",
-        waktuUpload:
-          l.createdAt.toLocaleString("id-ID", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }) + " WIB",
+        waktuUpload: formatWaktuWib(l.createdAt),
+        waktuRevisi: isLaporanRevised(l.createdAt, l.updatedAt)
+          ? formatWaktuWib(l.updatedAt)
+          : null,
         status: "SUDAH_UPLOAD",
         pagu: Number(l.kegiatan.pagu),
         realisasi: Number(l.realisasi),
@@ -180,14 +184,10 @@ export default async function ArsipPage({
         jenis: l.kegiatan.jenis || "APBN",
         pjNama: l.submittedBy?.name || l.kegiatan.pj?.name || "PJ Kegiatan",
         pjEmail: l.submittedBy?.email || l.kegiatan.pj?.email || "-",
-        waktuUpload:
-          l.createdAt.toLocaleString("id-ID", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          }) + " WIB",
+        waktuUpload: formatWaktuWib(l.createdAt),
+        waktuRevisi: isLaporanRevised(l.createdAt, l.updatedAt)
+          ? formatWaktuWib(l.updatedAt)
+          : null,
         status: "SUDAH_UPLOAD",
         pagu: Number(l.kegiatan.pagu),
         realisasi: Number(l.realisasi),
@@ -236,6 +236,31 @@ export default async function ArsipPage({
   }
 
   // ── SEMUA KODE DI BAWAH INI SEKARANG DI LUAR if/else — dipakai KEDUA mode ──
+
+  // Tandai baris yang batas waktunya sudah lewat, dan akses lapor yang sedang dibuka admin.
+  const deadlineSettings = await getReportDeadlineSettings();
+  const aksesAktif = await prisma.reportAccessOverride.findMany({
+    where: { revokedAt: null, openedUntil: { gt: new Date() } },
+  });
+  const aksesByKey = new Map(
+    aksesAktif.map((a) => [
+      `${a.kegiatanId}-${a.periodeBulan}-${a.periodeTahun}`,
+      a,
+    ]),
+  );
+  for (const item of allItems) {
+    item.deadlinePassed = isReportDeadlinePassed(
+      item.periodeTahun,
+      item.periodeBulan,
+      deadlineSettings,
+    );
+    const akses = aksesByKey.get(
+      `${item.kegiatanId}-${item.periodeBulan}-${item.periodeTahun}`,
+    );
+    const aktif = akses && isReportAccessActive(akses);
+    item.aksesId = aktif ? akses.id : null;
+    item.aksesSampai = aktif ? formatReportDeadline(akses.openedUntil) : null;
+  }
 
   const sudahCount = allItems.filter((i) => i.status === "SUDAH_UPLOAD").length;
   const belumCount = allItems.filter((i) => i.status === "BELUM_UPLOAD").length;
@@ -305,18 +330,41 @@ export default async function ArsipPage({
       return tMb !== tMa ? tMb - tMa : bMb - bMa;
     });
 
+  // Permintaan akses lapor dari PJ yang menunggu keputusan admin.
+  const permintaanMenunggu = await prisma.reportAccessRequest.findMany({
+    where: { status: "PENDING" },
+    orderBy: { createdAt: "asc" },
+    include: {
+      kegiatan: { select: { kode: true, nama: true } },
+      requestedBy: { select: { name: true, email: true } },
+    },
+  });
+  const permintaanItems = permintaanMenunggu.map((p) => ({
+    id: p.id,
+    kode: p.kegiatan.kode,
+    nama: p.kegiatan.nama,
+    periode: formatPeriodeLabel(p.periodeBulan, p.periodeTahun),
+    pjNama: p.requestedBy.name,
+    pjEmail: p.requestedBy.email,
+    alasan: p.reason,
+    dibuatPada: formatReportDeadline(p.createdAt),
+  }));
+
   return (
-    <MasterArsipSMARTPage
-      arsipList={paginatedItems}
-      stats={{ total: totalCount, sudah: sudahCount, belum: belumCount }}
-      pagination={{
-        page,
-        totalPages,
-        total: totalFiltered,
-        pageSize: PAGE_SIZE,
-      }}
-      periodOptions={periodOptions}
-      currentParams={{ q, periode: periodeParam, status: statusParam }}
-    />
+    <div className="space-y-5">
+      <PermintaanAksesPanel items={permintaanItems} />
+      <MasterArsipSMARTPage
+        arsipList={paginatedItems}
+        stats={{ total: totalCount, sudah: sudahCount, belum: belumCount }}
+        pagination={{
+          page,
+          totalPages,
+          total: totalFiltered,
+          pageSize: PAGE_SIZE,
+        }}
+        periodOptions={periodOptions}
+        currentParams={{ q, periode: periodeParam, status: statusParam }}
+      />
+    </div>
   );
 }

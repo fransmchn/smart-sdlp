@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { showToast } from "@/components/ui/app-toast";
 import { fmtRupiah } from "@/utils/formatters";
 import { submitLaporan } from "@/features/laproran/actions";
+import { mintaAksesLapor } from "@/features/akses-lapor/actions";
+import { canSubmitReport, getAccessRequestState } from "@/utils/reportAccess";
 import {
   formatReportDeadline,
   getReportDeadline,
@@ -52,6 +54,19 @@ interface InputLaporanPageProps {
   sessionUser: SessionUser;
   laporanHistory: LaporanHistoryItem[];
   deadline: { day: number; time: string };
+  accessOverrides: {
+    kegiatanId: string;
+    periodeBulan: number;
+    periodeTahun: number;
+    openedUntil: number;
+  }[];
+  accessRequests: {
+    kegiatanId: string;
+    periodeBulan: number;
+    periodeTahun: number;
+    status: "PENDING" | "APPROVED" | "REJECTED";
+    decisionNote: string | null;
+  }[];
   serverNow: number;
 }
 
@@ -76,6 +91,8 @@ export function InputLaporanPage({
   sessionUser,
   laporanHistory,
   deadline,
+  accessOverrides,
+  accessRequests,
   serverNow,
 }: InputLaporanPageProps) {
   const router = useRouter();
@@ -85,6 +102,9 @@ export function InputLaporanPage({
   const [selectedKode, setSelectedKode] = useState(initialSelectedKode);
   const [uraian, setUraian] = useState("");
   const [realIni, setRealIni] = useState("0");
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [requestReason, setRequestReason] = useState("");
+  const [isRequesting, startRequest] = useTransition();
 
   const periodeOptions = useMemo(
     () => generatePeriodeOptions(serverNow),
@@ -134,9 +154,59 @@ export function InputLaporanPage({
     deadline,
     new Date(clientNow),
   );
-  const isReadOnly = deadlinePassed;
+  // Admin dapat membuka akses lapor untuk kegiatan dan bulan ini walau batas waktu sudah lewat.
+  const aksesDibuka = accessOverrides.find(
+    (a) =>
+      a.kegiatanId === activeKegiatan.id &&
+      a.periodeBulan === periode.bulan &&
+      a.periodeTahun === periode.tahun,
+  );
+  const accessActive = Boolean(aksesDibuka) &&
+    canSubmitReport({ deadlinePassed: true, access: aksesDibuka, now: clientNow });
+  const isReadOnly = !canSubmitReport({
+    deadlinePassed,
+    access: aksesDibuka,
+    now: clientNow,
+  });
   const isRevision = Boolean(calc.existingLaporan);
   const isBlocked = activeKegiatan.statusAnggaran === "Diblokir";
+
+  // Permintaan akses terbaru untuk kegiatan dan bulan ini (daftar sudah terurut terbaru lebih dulu).
+  const permintaanTerbaru = accessRequests.find(
+    (r) =>
+      r.kegiatanId === activeKegiatan.id &&
+      r.periodeBulan === periode.bulan &&
+      r.periodeTahun === periode.tahun,
+  );
+  const requestState = getAccessRequestState({
+    deadlinePassed,
+    accessActive,
+    blocked: isBlocked,
+    latestRequestStatus: permintaanTerbaru?.status ?? null,
+  });
+
+  const handleRequestAccess = () => {
+    if (requestReason.trim().length < 5) {
+      showToast("error", "Alasan belum lengkap", "Alasan minimal 5 karakter.");
+      return;
+    }
+    startRequest(async () => {
+      const result = await mintaAksesLapor({
+        kegiatanId: activeKegiatan.id,
+        periodeBulan: periode.bulan,
+        periodeTahun: periode.tahun,
+        alasan: requestReason.trim(),
+      });
+      if (result.success) {
+        showToast("success", "Permintaan terkirim", result.message);
+        setRequestModalOpen(false);
+        setRequestReason("");
+        router.refresh();
+      } else {
+        showToast("error", "Permintaan gagal dikirim", result.error);
+      }
+    });
+  };
   const paguNum = activeKegiatan.pagu;
   const isFullyAbsorbed =
     paguNum > 0 && calc.totalUsedByOtherPeriods >= paguNum;
@@ -166,7 +236,7 @@ export function InputLaporanPage({
       showToast(
         "error",
         "Laporan terkunci",
-        `Batas waktu pelaporan periode ini sudah lewat pada ${formatReportDeadline(reportDeadline)}. Hubungi admin jika perlu revisi.`,
+        `Batas waktu pelaporan periode ini sudah lewat pada ${formatReportDeadline(reportDeadline)}. Hubungi admin untuk meminta akses lapor.`,
       );
       return;
     }
@@ -232,8 +302,32 @@ export function InputLaporanPage({
             )}
             {isReadOnly && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                Batas waktu pelaporan periode ini sudah lewat pada {formatReportDeadline(reportDeadline)}. Hubungi admin jika perlu revisi.
+                Batas waktu pelaporan periode ini sudah lewat pada {formatReportDeadline(reportDeadline)}. Hubungi admin untuk meminta akses lapor.
               </div>
+            )}
+            {deadlinePassed && accessActive && aksesDibuka && (
+              <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900">
+                Batas waktu periode ini sudah lewat, tetapi admin membuka akses lapor untuk Anda sampai {formatReportDeadline(new Date(aksesDibuka.openedUntil))}.
+              </div>
+            )}
+            {requestState === "pending" && (
+              <div className="rounded-lg border border-slate-300 bg-slate-50 p-3 text-xs text-slate-700">
+                Permintaan akses Anda sudah dikirim dan menunggu persetujuan admin. Anda akan diberi tahu lewat notifikasi dan email.
+              </div>
+            )}
+            {requestState === "rejected" && (
+              <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900">
+                Permintaan akses terakhir ditolak admin. Catatan: {permintaanTerbaru?.decisionNote || "-"}. Anda dapat mengajukan permintaan baru.
+              </div>
+            )}
+            {(requestState === "can-request" || requestState === "rejected") && (
+              <button
+                type="button"
+                onClick={() => setRequestModalOpen(true)}
+                className="rounded-md border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-800 transition hover:bg-sky-100"
+              >
+                Minta Buka Akses
+              </button>
             )}
             {isBlocked && (
               <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
@@ -355,6 +449,49 @@ export function InputLaporanPage({
           </div>
         </div>
       </div>
+
+      {requestModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+          <div className="w-full max-w-md space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-xl">
+            <div>
+              <h3 className="text-base font-bold text-slate-800">Minta Buka Akses Lapor</h3>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Batas waktu periode <strong>{periode.label}</strong> sudah lewat. Jelaskan alasan Anda agar admin dapat membuka akses untuk kegiatan <strong>{activeKegiatan.kode}</strong>.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-800">
+                Alasan <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                rows={3}
+                value={requestReason}
+                onChange={(e) => setRequestReason(e.target.value)}
+                placeholder="Contoh: Dokumen SP2D baru diterima dari bagian keuangan."
+                className="w-full rounded-md border border-slate-300 bg-white p-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-slate-200 pt-2">
+              <button
+                type="button"
+                onClick={() => setRequestModalOpen(false)}
+                disabled={isRequesting}
+                className="rounded-md px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestAccess}
+                disabled={isRequesting || requestReason.trim().length < 5}
+                className="rounded-md bg-sky-600 px-4 py-1.5 text-xs font-bold text-white transition hover:bg-sky-700 disabled:opacity-50"
+              >
+                {isRequesting ? "Mengirim..." : "Kirim Permintaan"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

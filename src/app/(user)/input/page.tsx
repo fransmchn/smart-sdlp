@@ -14,7 +14,7 @@ export default async function Page({
 
   const params = await searchParams;
 
-  const [kegiatanRows, laporanHistory, deadline] = await Promise.all([
+  const [kegiatanRows, laporanHistory, deadline, aksesRows, permintaanRows] = await Promise.all([
     prisma.kegiatan.findMany({
       where: { pjId: session.user.id },
       include: {
@@ -42,6 +42,33 @@ export default async function Page({
       },
     }),
     getReportDeadline(),
+    // Akses lapor yang dibuka admin dan masih berlaku untuk kegiatan milik PJ ini.
+    prisma.reportAccessOverride.findMany({
+      where: {
+        kegiatan: { pjId: session.user.id },
+        revokedAt: null,
+        openedUntil: { gt: new Date() },
+      },
+      select: {
+        kegiatanId: true,
+        periodeBulan: true,
+        periodeTahun: true,
+        openedUntil: true,
+      },
+    }),
+    // Permintaan akses lapor yang pernah diajukan PJ ini (terbaru lebih dulu).
+    prisma.reportAccessRequest.findMany({
+      where: { requestedById: session.user.id },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: {
+        kegiatanId: true,
+        periodeBulan: true,
+        periodeTahun: true,
+        status: true,
+        decisionNote: true,
+      },
+    }),
   ]);
 
   if (kegiatanRows.length === 0) {
@@ -96,6 +123,21 @@ export default async function Page({
     uraian: l.uraian,
   }));
 
+  const accessOverrides = aksesRows.map((a) => ({
+    kegiatanId: a.kegiatanId,
+    periodeBulan: a.periodeBulan,
+    periodeTahun: a.periodeTahun,
+    openedUntil: a.openedUntil.getTime(),
+  }));
+
+  const accessRequests = permintaanRows.map((r) => ({
+    kegiatanId: r.kegiatanId,
+    periodeBulan: r.periodeBulan,
+    periodeTahun: r.periodeTahun,
+    status: r.status,
+    decisionNote: r.decisionNote,
+  }));
+
   return (
     <InputLaporanPage
       kegiatanList={kegiatan}
@@ -109,6 +151,8 @@ export default async function Page({
       }}
       laporanHistory={laporanHistorySerialized}
       deadline={deadline}
+      accessOverrides={accessOverrides}
+      accessRequests={accessRequests}
       serverNow={new Date().getTime()}
     />
   );

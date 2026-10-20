@@ -15,6 +15,8 @@ export interface AuditLogItem {
   adminEmail: string;
   alasan: string;
   notif: string;
+  // Salinan isi laporan yang dihapus (null bila log tidak memilikinya).
+  salinan?: { label: string; value: string }[] | null;
 }
 
 interface LogAuditPageProps {
@@ -57,6 +59,7 @@ export function LogAuditPage({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [searchValue, setSearchValue] = useState(currentSearch);
+  const [salinanRow, setSalinanRow] = useState<AuditLogItem | null>(null);
 
   const updateQueryParams = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -167,6 +170,15 @@ export function LogAuditPage({
                       <span className="text-[11px] text-slate-500 line-clamp-1">
                         {row.kegiatan}
                       </span>
+                      {row.salinan && (
+                        <button
+                          type="button"
+                          onClick={() => setSalinanRow(row)}
+                          className="mt-1 text-[11px] font-bold text-sky-700 hover:underline cursor-pointer"
+                        >
+                          Lihat salinan laporan
+                        </button>
+                      )}
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
                       <span className="font-semibold text-slate-800 block">
@@ -260,6 +272,38 @@ export function LogAuditPage({
           )}
         </div>
       </div>
+      {salinanRow && salinanRow.salinan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+          <div className="w-full max-w-lg space-y-3 rounded-lg border border-slate-200 bg-white p-5 shadow-xl">
+            <div>
+              <h3 className="text-base font-bold text-slate-800">
+                Salinan Laporan yang Dihapus
+              </h3>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Isi laporan saat dihapus oleh {salinanRow.admin} pada {salinanRow.waktu}.
+                Alasan: {salinanRow.alasan}
+              </p>
+            </div>
+            <dl className="max-h-[50vh] divide-y divide-slate-100 overflow-y-auto rounded-md border border-slate-200 text-xs">
+              {salinanRow.salinan.map((item) => (
+                <div key={item.label} className="grid grid-cols-3 gap-2 p-2.5">
+                  <dt className="font-semibold text-slate-600">{item.label}</dt>
+                  <dd className="col-span-2 whitespace-pre-wrap text-slate-800">{item.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <div className="flex justify-end border-t border-slate-200 pt-2">
+              <button
+                type="button"
+                onClick={() => setSalinanRow(null)}
+                className="rounded-md bg-slate-800 px-4 py-1.5 text-xs font-bold text-white transition hover:bg-slate-900"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

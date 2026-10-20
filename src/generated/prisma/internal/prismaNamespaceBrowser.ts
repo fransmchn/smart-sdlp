@@ -62,7 +62,9 @@ export const ModelName = {
   Laporan: 'Laporan',
   Notification: 'Notification',
   AuditLog: 'AuditLog',
-  Dokumen: 'Dokumen'
+  Dokumen: 'Dokumen',
+  ReportAccessOverride: 'ReportAccessOverride',
+  ReportAccessRequest: 'ReportAccessRequest'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -250,6 +252,7 @@ export const AuditLogScalarFieldEnum = {
   adminEmail: 'adminEmail',
   alasan: 'alasan',
   notifStatus: 'notifStatus',
+  dataSnapshot: 'dataSnapshot',
   createdAt: 'createdAt'
 } as const
 
@@ -273,12 +276,52 @@ export const DokumenScalarFieldEnum = {
 export type DokumenScalarFieldEnum = (typeof DokumenScalarFieldEnum)[keyof typeof DokumenScalarFieldEnum]
 
 
+export const ReportAccessOverrideScalarFieldEnum = {
+  id: 'id',
+  kegiatanId: 'kegiatanId',
+  periodeBulan: 'periodeBulan',
+  periodeTahun: 'periodeTahun',
+  openedUntil: 'openedUntil',
+  reason: 'reason',
+  createdById: 'createdById',
+  createdAt: 'createdAt',
+  revokedAt: 'revokedAt'
+} as const
+
+export type ReportAccessOverrideScalarFieldEnum = (typeof ReportAccessOverrideScalarFieldEnum)[keyof typeof ReportAccessOverrideScalarFieldEnum]
+
+
+export const ReportAccessRequestScalarFieldEnum = {
+  id: 'id',
+  kegiatanId: 'kegiatanId',
+  periodeBulan: 'periodeBulan',
+  periodeTahun: 'periodeTahun',
+  reason: 'reason',
+  status: 'status',
+  requestedById: 'requestedById',
+  decidedById: 'decidedById',
+  decidedAt: 'decidedAt',
+  decisionNote: 'decisionNote',
+  createdAt: 'createdAt'
+} as const
+
+export type ReportAccessRequestScalarFieldEnum = (typeof ReportAccessRequestScalarFieldEnum)[keyof typeof ReportAccessRequestScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {
@@ -295,4 +338,13 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
