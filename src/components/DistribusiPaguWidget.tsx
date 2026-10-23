@@ -44,7 +44,7 @@ export function DistribusiPaguWidget({
   const displayPercentage =
     activeSegment && totalPaguValue > 0
       ? (activeSegment.value / totalPaguValue) * 100
-      : 100;
+      : 0;
 
   const handleProgramClick = (label: string) => {
     const target = programPaguData.find((p) => p.label === label);
@@ -134,7 +134,12 @@ export function DistribusiPaguWidget({
       <div className="space-y-1.5 text-xs border-t border-slate-200/80 pt-3 mt-1">
         {programPaguData.map((d, index) => {
           const isHovered = hoveredLabel === d.label;
-          const pct = ((d.value / totalPaguValue) * 100).toFixed(1);
+          const pct =
+            totalPaguValue > 0
+              ? ((d.value / totalPaguValue) * 100).toFixed(1)
+              : typeof d.percentage === "number" && !isNaN(d.percentage)
+                ? d.percentage.toFixed(1)
+                : "0.0";
 
           return (
             <motion.div
