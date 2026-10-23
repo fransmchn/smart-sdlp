@@ -56,10 +56,9 @@ assert.throws(() => computeAccessOpenedUntil(0, now), /Durasi akses/);
 assert.equal(formatPeriodeLabel(10, 2026), "Oktober 2026");
 
 // Status permintaan akses yang ditampilkan kepada PJ.
-const dasar = { deadlinePassed: true, accessActive: false, blocked: false };
+const dasar = { deadlinePassed: true, accessActive: false };
 assert.equal(getAccessRequestState({ ...dasar, deadlinePassed: false }), "hidden");
 assert.equal(getAccessRequestState({ ...dasar, accessActive: true }), "hidden");
-assert.equal(getAccessRequestState({ ...dasar, blocked: true }), "hidden");
 assert.equal(getAccessRequestState(dasar), "can-request");
 assert.equal(getAccessRequestState({ ...dasar, latestRequestStatus: null }), "can-request");
 assert.equal(getAccessRequestState({ ...dasar, latestRequestStatus: "PENDING" }), "pending");
@@ -68,10 +67,9 @@ assert.equal(getAccessRequestState({ ...dasar, latestRequestStatus: "REJECTED" }
 assert.equal(getAccessRequestState({ ...dasar, latestRequestStatus: "APPROVED" }), "can-request");
 
 // Jenis pengingat pada baris arsip.
-const belum = { hasReport: false, blocked: false, deadlinePassed: false, accessActive: false };
+const belum = { hasReport: false, deadlinePassed: false, accessActive: false };
 assert.equal(getReminderMode(belum), "normal");
 assert.equal(getReminderMode({ ...belum, hasReport: true }), "none");
-assert.equal(getReminderMode({ ...belum, blocked: true }), "none");
 assert.equal(getReminderMode({ ...belum, deadlinePassed: true }), "none");
 assert.equal(getReminderMode({ ...belum, deadlinePassed: true, accessActive: true }), "normal");
 assert.equal(getReminderMode({ ...belum, deadlinePassed: true, hasReport: true }), "none");

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { __setMockSessionForTest, getActionSession } from "@/lib/active-session";
 import { submitLaporan } from "@/features/laproran/actions";
 import { createKegiatan } from "@/features/kegiatan/actions";
-import { deleteLaporan } from "@/features/arsip/actions";
+import { deleteLaporan, ingatkanPJ } from "@/features/arsip/actions";
 import { deleteDokumen } from "@/features/repositori/actions";
 import {
   bukaAksesLapor,
@@ -376,3 +376,46 @@ const setujuiTanpaId = await setujuiPermintaanAkses({ requestId: "", durasiHari:
 assert.equal(setujuiTanpaId.success, false);
 
 console.log("permintaan akses lapor security checks passed");
+
+// ==============================================================================
+// Ingatkan PJ: hanya admin, dan periode harus valid
+// ==============================================================================
+setSession({
+  id: "admin-must-change-3",
+  name: "Admin Baru",
+  email: "admin.baru3@pertanian.go.id",
+  role: "ADMIN",
+  mustChangePassword: true,
+  isActive: true,
+});
+const ingatkanBlocked = await ingatkanPJ("keg-1", 1, 2026);
+assert.equal(ingatkanBlocked.success, false);
+assert.equal(ingatkanBlocked.success === false && ingatkanBlocked.error, "Wajib ganti kata sandi terlebih dahulu.");
+
+setSession({
+  id: "pj-3",
+  name: "PJ Tiga",
+  email: "pj3@pertanian.go.id",
+  role: "USER",
+  mustChangePassword: false,
+  isActive: true,
+});
+const ingatkanPj = await ingatkanPJ("keg-1", 1, 2026);
+assert.equal(ingatkanPj.success, false);
+assert.equal(ingatkanPj.success === false && ingatkanPj.error, "Hanya Admin yang berhak mengirim email pengingat.");
+
+setSession({
+  id: "admin-4",
+  name: "Admin",
+  email: "admin4@pertanian.go.id",
+  role: "ADMIN",
+  mustChangePassword: false,
+  isActive: true,
+});
+const ingatkanBulanSalah = await ingatkanPJ("keg-1", 13, 2026);
+assert.equal(ingatkanBulanSalah.success, false);
+assert.equal(ingatkanBulanSalah.success === false && ingatkanBulanSalah.error, "Periode tidak valid.");
+const ingatkanTahunSalah = await ingatkanPJ("keg-1", 5, 1999);
+assert.equal(ingatkanTahunSalah.success, false);
+
+console.log("ingatkan PJ security checks passed");

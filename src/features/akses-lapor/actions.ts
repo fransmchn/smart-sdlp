@@ -177,14 +177,6 @@ async function openAccessCore(params: OpenAccessParams): Promise<AksesLaporResul
         error: "Kegiatan ini belum punya Penanggung Jawab (PJ).",
       };
     }
-    if (kegiatan.statusAnggaran === "DIBLOKIR") {
-      return {
-        success: false,
-        error:
-          "Kegiatan ini sedang diblokir, sehingga laporan tetap tidak bisa dikirim. Ubah status anggarannya terlebih dahulu.",
-      };
-    }
-
     const settings = await prisma.appSettings.findFirst();
     const deadlineSettings = {
       day: settings?.reportDeadlineDay ?? 25,
@@ -406,13 +398,6 @@ export async function mintaAksesLapor(
     if (kegiatan.pjId !== session.user.id) {
       return { success: false, error: "Anda bukan PJ dari kegiatan ini." };
     }
-    if (kegiatan.statusAnggaran === "DIBLOKIR") {
-      return {
-        success: false,
-        error: "Kegiatan ini sedang diblokir. Hubungi admin untuk membukanya.",
-      };
-    }
-
     const settings = await prisma.appSettings.findFirst();
     const deadlineSettings = {
       day: settings?.reportDeadlineDay ?? 25,

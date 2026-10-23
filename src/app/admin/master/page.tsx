@@ -90,8 +90,8 @@ export default async function Page({
       take: WAJIB_PAGE_SIZE,
     }),
     prisma.kegiatan.count(), // total SEMUA kegiatan (bukan yang ter-filter)
-    prisma.kegiatan.count({ where: { wajib: true, statusAnggaran: "DIBUKA" } }),
-    prisma.kegiatan.count({ where: { wajib: true, statusAnggaran: "DIBUKA", sudahLapor: true } }),
+    prisma.kegiatan.count({ where: { wajib: true } }),
+    prisma.kegiatan.count({ where: { wajib: true, sudahLapor: true } }),
 
     prisma.user.findMany({
       where: { isActive: true, role: "USER" },

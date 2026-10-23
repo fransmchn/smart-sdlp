@@ -69,10 +69,10 @@ export function AdminDashboard({
   const totalPagu = activities.reduce((a, b) => a + b.pagu, 0);
   const totalReal = activities.reduce((sum, activity) => sum + (metrics[activity.id]?.sdPeriode ?? 0), 0);
   const totalWajib = activities.filter(
-    (a) => a.wajib && a.statusAnggaran !== "Diblokir",
+    (a) => a.wajib,
   ).length;
   const sudahLapor = activities.filter(
-    (a) => a.wajib && a.statusAnggaran !== "Diblokir" && a.sudahLapor,
+    (a) => a.wajib && a.sudahLapor,
   ).length;
   const belumLapor = totalWajib - sudahLapor;
   const persenSerapan = totalPagu > 0 ? (totalReal / totalPagu) * 100 : 0;
@@ -82,7 +82,7 @@ export function AdminDashboard({
     if (!item.pj || item.sudahLapor) return;
     setRemindingId(item.id);
     startTransition(async () => {
-      const result = await ingatkanPJ(item.id, `${reportPeriod.month}/${reportPeriod.year}`);
+      const result = await ingatkanPJ(item.id, reportPeriod.month, reportPeriod.year);
       if (result.success) {
         showToast("success", `Pengingat terkirim ke ${item.pj}`);
       } else {

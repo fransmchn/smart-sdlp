@@ -82,8 +82,7 @@ export async function deleteLaporan(
     const namaPeriode = `${NAMA_BULAN[target.periodeBulan - 1]} ${target.periodeTahun}`;
     let notifStatus = "GAGAL: Email PJ tidak tersedia";
 
-    // Akses isi ulang hanya berguna bila batas waktu sudah lewat, kegiatan punya PJ,
-    // dan kegiatan tidak sedang diblokir.
+    // Akses isi ulang hanya berguna bila batas waktu sudah lewat dan kegiatan punya PJ.
     const settings = await prisma.appSettings.findFirst();
     const deadlinePassed = isReportDeadlinePassed(
       target.periodeTahun,
@@ -96,8 +95,7 @@ export async function deleteLaporan(
     const bukaAksesIsiUlang =
       izinkanIsiUlang &&
       deadlinePassed &&
-      Boolean(target.kegiatan.pjId) &&
-      target.kegiatan.statusAnggaran !== "DIBLOKIR";
+      Boolean(target.kegiatan.pjId);
     const aksesSampai = bukaAksesIsiUlang
       ? computeAccessOpenedUntil(REFILL_ACCESS_DAYS)
       : null;
@@ -275,7 +273,7 @@ export async function deleteLaporan(
 // Mengirim pengingat ke PJ, hanya bila PJ memang masih bisa melapor:
 // - batas waktu belum lewat, atau akses lapor sedang dibuka: dikirim
 // - batas waktu lewat tanpa akses: ditolak (admin perlu membuka akses dulu)
-// - sudah ada laporan, atau kegiatan diblokir: ditolak
+// - sudah ada laporan: ditolak
 export async function ingatkanPJ(
   kegiatanId: string,
   periodeBulan: number,
@@ -351,7 +349,6 @@ export async function ingatkanPJ(
     const accessActive = isReportAccessActive(akses);
     const mode = getReminderMode({
       hasReport: Boolean(laporan),
-      blocked: kegiatan.statusAnggaran === "DIBLOKIR",
       deadlinePassed,
       accessActive,
     });
@@ -360,9 +357,7 @@ export async function ingatkanPJ(
         success: false,
         error: laporan
           ? "Laporan periode ini sudah ada, PJ tidak perlu diingatkan."
-          : kegiatan.statusAnggaran === "DIBLOKIR"
-            ? "Kegiatan ini sedang diblokir, PJ tidak dapat melapor."
-            : "Batas waktu periode ini sudah lewat. Buka akses lapor terlebih dahulu agar PJ bisa melapor, lalu kirim pengingat.",
+          : "Batas waktu periode ini sudah lewat. Buka akses lapor terlebih dahulu agar PJ bisa melapor, lalu kirim pengingat.",
       };
     }
 

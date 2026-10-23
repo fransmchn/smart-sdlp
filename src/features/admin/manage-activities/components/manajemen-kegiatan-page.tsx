@@ -775,12 +775,7 @@ export function ManajemenKegiatanPage({
                             type="checkbox"
                             checked={getWajibValue(k)}
                             onChange={() => handleToggleWajib(k)}
-                             disabled={pendingIds.has(k.id) || k.statusAnggaran === "DIBLOKIR"}
-                             title={
-                               k.statusAnggaran === "DIBLOKIR"
-                                 ? "Kegiatan diblokir, kewajiban lapor otomatis tidak berlaku"
-                                 : undefined
-                             }
+                             disabled={pendingIds.has(k.id)}
                             className="w-4 h-4 text-emerald-800 rounded border-slate-300 focus:ring-emerald-700 cursor-pointer disabled:opacity-50"
                           />
                         </td>
@@ -1051,7 +1046,7 @@ export function ManajemenKegiatanPage({
                     <option value="DIBLOKIR">Diblokir</option>
                   </select>
                   <p className="text-[11px] text-slate-500">
-                    Kegiatan diblokir tidak dapat menerima laporan baru.
+                    Kegiatan diblokir tetap wajib dilaporkan, tetapi realisasi anggarannya harus Rp 0.
                   </p>
                 </div>
 

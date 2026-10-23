@@ -84,18 +84,18 @@ export function UserDashboard({
     if (filterStatus === "ALL") return sortedActivities;
     if (filterStatus === "BELUM_LAPOR")
       return sortedActivities.filter(
-        (a) => a.status !== "done" && a.statusAnggaran !== "Diblokir",
+        (a) => a.status !== "done",
       );
     return sortedActivities.filter(
-      (a) => a.wajib && a.statusAnggaran !== "Diblokir",
+      (a) => a.wajib,
     );
   }, [sortedActivities, filterStatus]);
 
   const belumLaporCount = activities.filter(
-    (a) => a.status !== "done" && a.statusAnggaran !== "Diblokir",
+    (a) => a.status !== "done",
   ).length;
   const wajibCount = activities.filter(
-    (a) => a.wajib && a.statusAnggaran !== "Diblokir",
+    (a) => a.wajib,
   ).length;
 
   const historyRows = useMemo(() => {
