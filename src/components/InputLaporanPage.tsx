@@ -181,7 +181,6 @@ export function InputLaporanPage({
   const requestState = getAccessRequestState({
     deadlinePassed,
     accessActive,
-    blocked: isBlocked,
     latestRequestStatus: permintaanTerbaru?.status ?? null,
   });
 
@@ -222,7 +221,7 @@ export function InputLaporanPage({
     if (calc.existingLaporan) {
       setUraian(calc.existingLaporan.uraian);
       setRealIni(
-        isFullyAbsorbed ? "0" : String(calc.existingLaporan.realIni),
+        isFullyAbsorbed || isBlocked ? "0" : String(calc.existingLaporan.realIni),
       );
       return;
     }
@@ -331,7 +330,7 @@ export function InputLaporanPage({
             )}
             {isBlocked && (
               <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
-                <strong>Kegiatan ini sedang diblokir oleh admin.</strong> Pelaporan tidak dapat dilakukan sampai status anggaran dibuka kembali. Silakan hubungi admin.
+                <strong>Kegiatan ini sedang diblokir.</strong> Anda tetap wajib melaporkan uraian kegiatan, tetapi realisasi anggaran dikunci Rp 0 sampai status anggaran dibuka kembali.
               </div>
             )}
 
@@ -395,7 +394,7 @@ export function InputLaporanPage({
                 rows={3}
                 value={uraian}
                 onChange={(event) => setUraian(event.target.value)}
-                disabled={isReadOnly || isBlocked}
+                disabled={isReadOnly}
                 placeholder="Deskripsikan realisasi keuangan, output kegiatan, dan kendala/tindak lanjut..."
                 className="w-full rounded-md border border-slate-300 bg-white p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#E28B59] disabled:bg-slate-100"
               />
@@ -441,7 +440,7 @@ export function InputLaporanPage({
             <button
               type="button"
               onClick={handleSave}
-              disabled={isReadOnly || isBlocked || isPending || exceedsRemaining}
+              disabled={isReadOnly || isPending || exceedsRemaining}
               className="rounded-md bg-[#E28B59] px-5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#d47c4a] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isPending ? "Menyimpan..." : "Simpan & Kirim Laporan Realisasi"}

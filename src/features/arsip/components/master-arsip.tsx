@@ -132,12 +132,9 @@ export function MasterArsipSMARTPage({
     setDeleteModalOpen(true);
   };
 
-  // Pengisian ulang hanya relevan bila batas waktu sudah lewat dan kegiatan tidak diblokir.
+  // Pengisian ulang hanya relevan bila batas waktu sudah lewat.
   // Bila batas waktu belum lewat, PJ memang masih bisa mengisi ulang tanpa akses khusus.
-  const refillApplicable = Boolean(
-    selectedItem?.deadlinePassed &&
-      selectedItem.statusAnggaran.toUpperCase() !== "DIBLOKIR",
-  );
+  const refillApplicable = Boolean(selectedItem?.deadlinePassed);
 
   const handleConfirmDelete = () => {
     if (!selectedItem || !selectedItem.laporanId) return;
@@ -220,7 +217,6 @@ export function MasterArsipSMARTPage({
   const reminderModeOf = (item: ArsipItem) =>
     getReminderMode({
       hasReport: item.status === "SUDAH_UPLOAD",
-      blocked: item.statusAnggaran.toUpperCase() === "DIBLOKIR",
       deadlinePassed: Boolean(item.deadlinePassed),
       accessActive: Boolean(item.aksesId),
     });
@@ -512,8 +508,7 @@ export function MasterArsipSMARTPage({
                             {isPending && revokingId === item.id ? "Mencabut..." : "Cabut"}
                           </button>
                         </div>
-                      ) : item.deadlinePassed &&
-                        item.statusAnggaran.toUpperCase() !== "DIBLOKIR" ? (
+                      ) : item.deadlinePassed ? (
                         <div className="mt-1.5 flex flex-col items-center gap-1">
                           {item.status === "BELUM_UPLOAD" && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">

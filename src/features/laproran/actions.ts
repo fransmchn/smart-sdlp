@@ -137,11 +137,12 @@ export async function submitLaporan(
           BigInt(0),
         );
 
-        if (kegiatan.statusAnggaran === "DIBLOKIR") {
+        // Kegiatan diblokir tetap wajib dilaporkan, tetapi realisasi anggarannya harus Rp 0.
+        if (kegiatan.statusAnggaran === "DIBLOKIR" && data.realIni !== 0) {
           return {
             success: false,
             error:
-              "Kegiatan ini sedang diblokir oleh admin. Pelaporan tidak dapat dilakukan sampai status anggaran dibuka kembali. Silakan hubungi admin.",
+              "Kegiatan ini sedang diblokir, sehingga realisasi anggaran harus Rp 0. Anda tetap wajib melaporkan uraian kegiatan.",
           };
         }
 

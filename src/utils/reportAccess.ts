@@ -69,7 +69,7 @@ export function formatPeriodeLabel(bulan: number, tahun: number): string {
 export type AccessRequestStatusValue = "PENDING" | "APPROVED" | "REJECTED";
 
 export type AccessRequestState =
-  | "hidden" // tidak perlu meminta akses (belum lewat batas waktu, sudah dibuka, atau diblokir)
+  | "hidden" // tidak perlu meminta akses (belum lewat batas waktu, atau akses sudah dibuka)
   | "can-request" // form terkunci, PJ boleh mengajukan permintaan
   | "pending" // permintaan sudah dikirim dan menunggu admin
   | "rejected"; // permintaan terakhir ditolak, PJ boleh mengajukan lagi
@@ -78,10 +78,9 @@ export type AccessRequestState =
 export function getAccessRequestState(input: {
   deadlinePassed: boolean;
   accessActive: boolean;
-  blocked: boolean;
   latestRequestStatus?: AccessRequestStatusValue | null;
 }): AccessRequestState {
-  if (!input.deadlinePassed || input.accessActive || input.blocked) return "hidden";
+  if (!input.deadlinePassed || input.accessActive) return "hidden";
   if (input.latestRequestStatus === "PENDING") return "pending";
   if (input.latestRequestStatus === "REJECTED") return "rejected";
   return "can-request";
@@ -92,16 +91,14 @@ export type ReminderMode =
   | "normal"; // PJ masih bisa melapor, jadi pengingat berguna
 
 // Menentukan apakah pengingat masuk akal untuk sebuah baris arsip. Pengingat
-// tidak berguna bila laporan sudah ada, kegiatan diblokir, atau batas waktu
-// sudah lewat tanpa akses terbuka (PJ tidak bisa mengisi, jadi admin perlu
-// membuka akses dulu).
+// tidak berguna bila laporan sudah ada, atau batas waktu sudah lewat tanpa
+// akses terbuka (PJ tidak bisa mengisi, jadi admin perlu membuka akses dulu).
 export function getReminderMode(input: {
   hasReport: boolean;
-  blocked: boolean;
   deadlinePassed: boolean;
   accessActive: boolean;
 }): ReminderMode {
-  if (input.hasReport || input.blocked) return "none";
+  if (input.hasReport) return "none";
   if (input.deadlinePassed && !input.accessActive) return "none";
   return "normal";
 }
