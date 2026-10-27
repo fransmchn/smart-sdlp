@@ -575,23 +575,20 @@ export function ManajemenUserPage({
             onClick={() => !pending && setOpenAdd(false)}
           />
           <div className="relative z-10 w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-            <div className="bg-[#143D32] px-5 py-4 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-emerald-800/80">
-                  <UserPlus className="w-4 h-4 text-emerald-200" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold">Tambah Pengguna Baru</h3>
-                  <p className="text-[11px] text-emerald-200">
-                    Membuat akun Penanggung Jawab (PJ) Kegiatan
-                  </p>
-                </div>
+            {/* Minimalist & Clean Header */}
+            <div className="flex items-center justify-between border-b border-slate-200/80 px-5 py-4 bg-slate-50/60">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Tambah Pengguna Baru</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Membuat akun Penanggung Jawab (PJ) Kegiatan
+                </p>
               </div>
               <button
                 type="button"
                 disabled={pending}
                 onClick={() => setOpenAdd(false)}
-                className="text-emerald-200 hover:text-white p-1 rounded transition"
+                aria-label="Tutup"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200/60 hover:text-slate-600 transition disabled:opacity-50"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -697,23 +694,20 @@ export function ManajemenUserPage({
             onClick={() => !pending && setEditTarget(null)}
           />
           <div className="relative z-10 w-full max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-            <div className="bg-[#143D32] px-5 py-4 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-emerald-800/80">
-                  <Pencil className="w-4 h-4 text-emerald-200" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold">Edit Profil User</h3>
-                  <p className="text-[11px] text-emerald-200">
-                    Memperbarui data identitas pengguna
-                  </p>
-                </div>
+            {/* Minimalist & Clean Header */}
+            <div className="flex items-center justify-between border-b border-slate-200/80 px-5 py-4 bg-slate-50/60">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Edit Profil User</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Memperbarui data identitas pengguna
+                </p>
               </div>
               <button
                 type="button"
                 disabled={pending}
                 onClick={() => setEditTarget(null)}
-                className="text-emerald-200 hover:text-white p-1 rounded transition"
+                aria-label="Tutup"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200/60 hover:text-slate-600 transition disabled:opacity-50"
               >
                 <X className="w-4 h-4" />
               </button>
