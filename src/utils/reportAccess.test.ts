@@ -7,6 +7,7 @@ import {
   formatPeriodeLabel,
   isReportAccessActive,
   isValidAccessDays,
+  PESAN_KEGIATAN_DIBLOKIR,
 } from "./reportAccess";
 
 const now = new Date("2026-10-15T08:00:00.000Z");
@@ -73,5 +74,23 @@ assert.equal(getReminderMode({ ...belum, hasReport: true }), "none");
 assert.equal(getReminderMode({ ...belum, deadlinePassed: true }), "none");
 assert.equal(getReminderMode({ ...belum, deadlinePassed: true, accessActive: true }), "normal");
 assert.equal(getReminderMode({ ...belum, deadlinePassed: true, hasReport: true }), "none");
+
+// Kegiatan diblokir: tidak ada permintaan akses dan tidak ada pengingat,
+// apa pun kondisi deadline, akses, atau laporan.
+assert.equal(getAccessRequestState({ ...dasar, blocked: true }), "hidden");
+assert.equal(
+  getAccessRequestState({ ...dasar, blocked: true, latestRequestStatus: "REJECTED" }),
+  "hidden",
+);
+assert.equal(
+  getAccessRequestState({ ...dasar, blocked: true, latestRequestStatus: "PENDING" }),
+  "hidden",
+);
+// blocked false/tidak diisi tidak mengubah perilaku lama.
+assert.equal(getAccessRequestState({ ...dasar, blocked: false }), "can-request");
+assert.equal(getReminderMode({ ...belum, blocked: true }), "none");
+assert.equal(getReminderMode({ ...belum, blocked: true, deadlinePassed: true, accessActive: true }), "none");
+assert.equal(getReminderMode({ ...belum, blocked: false }), "normal");
+assert.ok(PESAN_KEGIATAN_DIBLOKIR.includes("diblokir"));
 
 console.log("reportAccess checks passed");

@@ -6,6 +6,11 @@
 export const ACCESS_MIN_DAYS = 1;
 export const ACCESS_MAX_DAYS = 30;
 
+// Kegiatan yang anggarannya diblokir tidak boleh diisi atau direvisi oleh PJ
+// pada periode mana pun. Pesan ini dipakai bersama oleh server dan tampilan.
+export const PESAN_KEGIATAN_DIBLOKIR =
+  "Kegiatan ini sedang diblokir, sehingga laporan tidak dapat diisi atau direvisi sampai admin membuka kembali status anggarannya.";
+
 type TimeValue = Date | number | string;
 
 export type ReportAccessWindow = {
@@ -79,7 +84,10 @@ export function getAccessRequestState(input: {
   deadlinePassed: boolean;
   accessActive: boolean;
   latestRequestStatus?: AccessRequestStatusValue | null;
+  // Kegiatan diblokir: membuka akses tidak ada gunanya, jadi tidak ditawarkan.
+  blocked?: boolean;
 }): AccessRequestState {
+  if (input.blocked) return "hidden";
   if (!input.deadlinePassed || input.accessActive) return "hidden";
   if (input.latestRequestStatus === "PENDING") return "pending";
   if (input.latestRequestStatus === "REJECTED") return "rejected";
@@ -92,12 +100,16 @@ export type ReminderMode =
 
 // Menentukan apakah pengingat masuk akal untuk sebuah baris arsip. Pengingat
 // tidak berguna bila laporan sudah ada, atau batas waktu sudah lewat tanpa
-// akses terbuka (PJ tidak bisa mengisi, jadi admin perlu membuka akses dulu).
+// akses terbuka (PJ tidak bisa mengisi, jadi admin perlu membuka akses dulu),
+// atau kegiatan sedang diblokir.
 export function getReminderMode(input: {
   hasReport: boolean;
   deadlinePassed: boolean;
   accessActive: boolean;
+  // Kegiatan diblokir: PJ tidak bisa mengisi, jadi pengingat tidak berguna.
+  blocked?: boolean;
 }): ReminderMode {
+  if (input.blocked) return "none";
   if (input.hasReport) return "none";
   if (input.deadlinePassed && !input.accessActive) return "none";
   return "normal";

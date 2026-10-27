@@ -63,6 +63,7 @@ Aplikasi dikembangkan oleh tim mahasiswa magang Universitas Bina Sarana Informat
   - Tetapkan kategori program, pagu, uraian, dan PJ kegiatan.
   - Tandai kegiatan sebagai wajib lapor.
   - Ubah status anggaran dibuka atau diblokir.
+    - Kegiatan yang diblokir tidak dapat diisi atau direvisi oleh PJ pada periode mana pun, dan tidak bisa dibuka akses laporannya atau diingatkan.
   - Atur hari dan jam deadline pelaporan.
   - Kelola kategori program utama.
 - **Manajemen pengguna** (`/admin/users`)
