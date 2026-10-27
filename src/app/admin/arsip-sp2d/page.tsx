@@ -248,7 +248,13 @@ export default async function ArsipPage({
       a,
     ]),
   );
+  // Status blokir kegiatan saat ini. `statusAnggaran` pada baris laporan adalah
+  // snapshot saat laporan dikirim, jadi tidak bisa dipakai untuk keputusan ini.
+  const kegiatanDiblokirIds = new Set(
+    kegiatanList.filter((k) => k.statusAnggaran === "DIBLOKIR").map((k) => k.id),
+  );
   for (const item of allItems) {
+    item.kegiatanDiblokir = kegiatanDiblokirIds.has(item.kegiatanId);
     item.deadlinePassed = isReportDeadlinePassed(
       item.periodeTahun,
       item.periodeBulan,

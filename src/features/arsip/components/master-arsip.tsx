@@ -35,6 +35,8 @@ export interface ArsipItem {
   // Diisi oleh halaman arsip: apakah batas waktu periode ini sudah lewat, dan
   // akses lapor yang sedang dibuka admin (bila ada).
   deadlinePassed?: boolean;
+  // Status blokir kegiatan saat ini (bukan snapshot status pada laporan).
+  kegiatanDiblokir?: boolean;
   aksesId?: string | null;
   aksesSampai?: string | null;
 }
@@ -219,6 +221,7 @@ export function MasterArsipSMARTPage({
       hasReport: item.status === "SUDAH_UPLOAD",
       deadlinePassed: Boolean(item.deadlinePassed),
       accessActive: Boolean(item.aksesId),
+      blocked: item.kegiatanDiblokir,
     });
 
   const handleSendReminder = (item: ArsipItem) => {
@@ -507,6 +510,15 @@ export function MasterArsipSMARTPage({
                           >
                             {isPending && revokingId === item.id ? "Mencabut..." : "Cabut"}
                           </button>
+                        </div>
+                      ) : item.kegiatanDiblokir ? (
+                        <div className="mt-1.5 flex flex-col items-center gap-1">
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200"
+                            title="Kegiatan diblokir: PJ tidak dapat mengisi laporan."
+                          >
+                            Diblokir
+                          </span>
                         </div>
                       ) : item.deadlinePassed ? (
                         <div className="mt-1.5 flex flex-col items-center gap-1">

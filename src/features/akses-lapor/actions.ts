@@ -15,6 +15,7 @@ import {
   ACCESS_MIN_DAYS,
   computeAccessOpenedUntil,
   formatPeriodeLabel,
+  PESAN_KEGIATAN_DIBLOKIR,
 } from "@/utils/reportAccess";
 import {
   formatReportDeadline,
@@ -170,6 +171,12 @@ async function openAccessCore(params: OpenAccessParams): Promise<AksesLaporResul
     });
     if (!kegiatan) {
       return { success: false, error: "Kegiatan tidak ditemukan." };
+    }
+    if (kegiatan.statusAnggaran === "DIBLOKIR") {
+      return {
+        success: false,
+        error: `${PESAN_KEGIATAN_DIBLOKIR} Buka blokir terlebih dahulu sebelum membuka akses lapor.`,
+      };
     }
     if (!kegiatan.pj) {
       return {
@@ -397,6 +404,9 @@ export async function mintaAksesLapor(
     }
     if (kegiatan.pjId !== session.user.id) {
       return { success: false, error: "Anda bukan PJ dari kegiatan ini." };
+    }
+    if (kegiatan.statusAnggaran === "DIBLOKIR") {
+      return { success: false, error: PESAN_KEGIATAN_DIBLOKIR };
     }
     const settings = await prisma.appSettings.findFirst();
     const deadlineSettings = {

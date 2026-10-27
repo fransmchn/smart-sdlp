@@ -314,6 +314,13 @@ export async function ingatkanPJ(
     if (!kegiatan) {
       return { success: false, error: "Kegiatan tidak ditemukan." };
     }
+    if (kegiatan.statusAnggaran === "DIBLOKIR") {
+      return {
+        success: false,
+        error:
+          "Kegiatan ini sedang diblokir, PJ tidak dapat mengisi laporan sehingga tidak perlu diingatkan.",
+      };
+    }
 
     const pjEmail = kegiatan.pj?.email;
     const pjName = kegiatan.pj?.name || "Penanggung Jawab Kegiatan";

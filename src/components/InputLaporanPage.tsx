@@ -6,7 +6,11 @@ import { showToast } from "@/components/ui/app-toast";
 import { fmtRupiah } from "@/utils/formatters";
 import { submitLaporan } from "@/features/laproran/actions";
 import { mintaAksesLapor } from "@/features/akses-lapor/actions";
-import { canSubmitReport, getAccessRequestState } from "@/utils/reportAccess";
+import {
+  canSubmitReport,
+  getAccessRequestState,
+  PESAN_KEGIATAN_DIBLOKIR,
+} from "@/utils/reportAccess";
 import {
   formatReportDeadline,
   getReportDeadline,
@@ -170,6 +174,8 @@ export function InputLaporanPage({
   });
   const isRevision = Boolean(calc.existingLaporan);
   const isBlocked = activeKegiatan.statusAnggaran === "Diblokir";
+  // Form tidak bisa diisi bila batas waktu lewat tanpa akses, atau kegiatan diblokir.
+  const isLocked = isReadOnly || isBlocked;
 
   // Permintaan akses terbaru untuk kegiatan dan bulan ini (daftar sudah terurut terbaru lebih dulu).
   const permintaanTerbaru = accessRequests.find(
@@ -182,6 +188,7 @@ export function InputLaporanPage({
     deadlinePassed,
     accessActive,
     latestRequestStatus: permintaanTerbaru?.status ?? null,
+    blocked: isBlocked,
   });
 
   const handleRequestAccess = () => {
@@ -221,16 +228,20 @@ export function InputLaporanPage({
     if (calc.existingLaporan) {
       setUraian(calc.existingLaporan.uraian);
       setRealIni(
-        isFullyAbsorbed || isBlocked ? "0" : String(calc.existingLaporan.realIni),
+        isFullyAbsorbed ? "0" : String(calc.existingLaporan.realIni),
       );
       return;
     }
     setUraian("");
     setRealIni("0");
-  }, [calc, isBlocked, isFullyAbsorbed]);
+  }, [calc, isFullyAbsorbed]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSave = () => {
+    if (isBlocked) {
+      showToast("error", "Kegiatan diblokir", PESAN_KEGIATAN_DIBLOKIR);
+      return;
+    }
     if (isReadOnly) {
       showToast(
         "error",
@@ -289,17 +300,17 @@ export function InputLaporanPage({
               <span className="h-3.5 w-1.5 rounded-xs bg-[#E28B59]" />
               1. Identitas Kegiatan, Status Anggaran &amp; Penanggung Jawab (PJ)
             </div>
-            {isRevision && (
+            {isRevision && !isBlocked && (
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
                 Anda sedang merevisi laporan yang sudah pernah disubmit sebelumnya untuk periode ini.
               </div>
             )}
-            {!isRevision && !isReadOnly && (
+            {!isRevision && !isLocked && (
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
                 Anda sedang membuat laporan baru untuk periode ini.
               </div>
             )}
-            {isReadOnly && (
+            {isReadOnly && !isBlocked && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
                 Batas waktu pelaporan periode ini sudah lewat pada {formatReportDeadline(reportDeadline)}. Hubungi admin untuk meminta akses lapor.
               </div>
@@ -330,7 +341,7 @@ export function InputLaporanPage({
             )}
             {isBlocked && (
               <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
-                <strong>Kegiatan ini sedang diblokir.</strong> Anda tetap wajib melaporkan uraian kegiatan, tetapi realisasi anggaran dikunci Rp 0 sampai status anggaran dibuka kembali.
+                {PESAN_KEGIATAN_DIBLOKIR}
               </div>
             )}
 
@@ -394,7 +405,7 @@ export function InputLaporanPage({
                 rows={3}
                 value={uraian}
                 onChange={(event) => setUraian(event.target.value)}
-                disabled={isReadOnly}
+                disabled={isLocked}
                 placeholder="Deskripsikan realisasi keuangan, output kegiatan, dan kendala/tindak lanjut..."
                 className="w-full rounded-md border border-slate-300 bg-white p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#E28B59] disabled:bg-slate-100"
               />
@@ -421,7 +432,7 @@ export function InputLaporanPage({
                   type="number"
                   value={realIni}
                   onChange={(event) => setRealIni(event.target.value)}
-                  disabled={isReadOnly || isBlocked || isFullyAbsorbed}
+                  disabled={isLocked || isFullyAbsorbed}
                   className="mt-1 h-8 w-full rounded border border-amber-300 bg-white px-2.5 text-xs font-mono font-bold text-slate-900 disabled:bg-slate-100"
                 />
                 <span className="mt-1 block text-[10px] text-amber-800">Maksimal: {fmtRupiah(maxAllowedIni)}</span>
@@ -440,7 +451,7 @@ export function InputLaporanPage({
             <button
               type="button"
               onClick={handleSave}
-              disabled={isReadOnly || isPending || exceedsRemaining}
+              disabled={isLocked || isPending || exceedsRemaining}
               className="rounded-md bg-[#E28B59] px-5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-[#d47c4a] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isPending ? "Menyimpan..." : "Simpan & Kirim Laporan Realisasi"}

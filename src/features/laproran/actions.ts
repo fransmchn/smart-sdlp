@@ -5,7 +5,10 @@ import { z } from "zod";
 import { getActionSession } from "@/lib/active-session";
 import { createUserNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
-import { canSubmitReport } from "@/utils/reportAccess";
+import {
+  canSubmitReport,
+  PESAN_KEGIATAN_DIBLOKIR,
+} from "@/utils/reportAccess";
 import {
   formatReportDeadline,
   getReportDeadline,
@@ -78,6 +81,10 @@ export async function submitLaporan(
             error: "Anda bukan Penanggung Jawab kegiatan ini.",
           };
         }
+        // Kegiatan diblokir: tidak boleh ada laporan baru maupun revisi.
+        if (kegiatan.statusAnggaran === "DIBLOKIR") {
+          return { success: false, error: PESAN_KEGIATAN_DIBLOKIR };
+        }
 
         const settings = await tx.appSettings.findFirst();
         const deadlineSettings = {
@@ -136,15 +143,6 @@ export async function submitLaporan(
           (sum, laporan) => sum + laporan.realIni,
           BigInt(0),
         );
-
-        // Kegiatan diblokir tetap wajib dilaporkan, tetapi realisasi anggarannya harus Rp 0.
-        if (kegiatan.statusAnggaran === "DIBLOKIR" && data.realIni !== 0) {
-          return {
-            success: false,
-            error:
-              "Kegiatan ini sedang diblokir, sehingga realisasi anggaran harus Rp 0. Anda tetap wajib melaporkan uraian kegiatan.",
-          };
-        }
 
         const currentRealisasi = BigInt(data.realIni);
         const totalIfSubmitted =

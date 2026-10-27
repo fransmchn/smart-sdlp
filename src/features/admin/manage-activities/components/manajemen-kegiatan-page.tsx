@@ -1046,7 +1046,7 @@ export function ManajemenKegiatanPage({
                     <option value="DIBLOKIR">Diblokir</option>
                   </select>
                   <p className="text-[11px] text-slate-500">
-                    Kegiatan diblokir tetap wajib dilaporkan, tetapi realisasi anggarannya harus Rp 0.
+                    Kegiatan diblokir tidak dapat diisi atau direvisi oleh PJ pada periode mana pun.
                   </p>
                 </div>
 
