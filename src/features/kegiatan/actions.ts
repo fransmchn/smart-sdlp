@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getActionSession } from "@/lib/active-session";
 import { z } from "zod";
 import { recordAdminAudit } from "@/lib/audit";
+import { cabutAksesSaatDiblokir } from "@/lib/report-access-cleanup";
 
 const createKegiatanSchema = z.object({
   kode: z.string().min(1, "Kode kegiatan wajib diisi"),
@@ -230,10 +231,20 @@ export async function updateKegiatan(
     },
   });
 
+  if (data.statusAnggaran === "DIBLOKIR") {
+    await cabutAksesSaatDiblokir(tx, kegiatan, {
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    });
+  }
+
   await recordAdminAudit({ action: "UPDATE_KEGIATAN", adminName: session.user.name, adminEmail: session.user.email, kodeKegiatan: kegiatan.kode, namaKegiatan: kegiatan.nama }, tx);
   return kegiatan;
   });
   revalidatePath("/admin/master");
+  revalidatePath("/admin/arsip-sp2d");
+  revalidatePath("/input");
 
   return {
     success: true,
@@ -404,6 +415,14 @@ export async function toggleStatusAnggaran(
     data: { statusAnggaran },
   });
 
+  if (statusAnggaran === "DIBLOKIR") {
+    await cabutAksesSaatDiblokir(tx, target, {
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    });
+  }
+
   revalidatePath("/admin/master");
   revalidatePath("/input");
   revalidatePath("/dashboard");
@@ -412,6 +431,7 @@ export async function toggleStatusAnggaran(
   return { success: true as const, id, statusAnggaran };
   });
   revalidatePath("/admin/master");
+  revalidatePath("/admin/arsip-sp2d");
   revalidatePath("/input");
   revalidatePath("/dashboard");
   return result;

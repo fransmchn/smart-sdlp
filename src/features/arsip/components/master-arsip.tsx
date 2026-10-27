@@ -499,7 +499,15 @@ export function MasterArsipSMARTPage({
                         </button>
                       )}
                       {item.aksesId ? (
-                        <div className="mt-1.5 flex items-center justify-center gap-1.5 text-[10.5px]">
+                        <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5 text-[10.5px]">
+                          {item.kegiatanDiblokir && (
+                            <span
+                              className="inline-flex items-center px-2 py-0.5 rounded font-bold bg-rose-50 text-rose-700 border border-rose-200"
+                              title="Kegiatan diblokir: PJ tidak dapat mengisi laporan walau akses ini masih tercatat. Cabut akses ini."
+                            >
+                              Diblokir
+                            </span>
+                          )}
                           <span className="inline-flex items-center px-2 py-0.5 rounded font-semibold bg-sky-50 text-sky-800 border border-sky-200">
                             Akses dibuka s.d. {item.aksesSampai}
                           </span>

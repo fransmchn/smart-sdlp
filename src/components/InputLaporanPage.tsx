@@ -315,7 +315,7 @@ export function InputLaporanPage({
                 Batas waktu pelaporan periode ini sudah lewat pada {formatReportDeadline(reportDeadline)}. Hubungi admin untuk meminta akses lapor.
               </div>
             )}
-            {deadlinePassed && accessActive && aksesDibuka && (
+            {deadlinePassed && accessActive && aksesDibuka && !isBlocked && (
               <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900">
                 Batas waktu periode ini sudah lewat, tetapi admin membuka akses lapor untuk Anda sampai {formatReportDeadline(new Date(aksesDibuka.openedUntil))}.
               </div>
