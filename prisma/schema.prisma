@@ -160,6 +160,8 @@ model Kegiatan {
   fisik           Int?           @default(0)
   uraian          String?
   statusAnggaran  StatusAnggaran @default(DIBUKA)
+  // Tahun anggaran: laporan kegiatan ini hanya sah untuk periode di tahun tersebut.
+  tahunAnggaran   Int
   realLalu        BigInt?        @default(0)
   realIni         BigInt?        @default(0)
   wajib           Boolean        @default(false)

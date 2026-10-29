@@ -8,6 +8,20 @@ import {
 } from "@/utils/reportDeadline";
 import { formatPeriodeLabel, isReportAccessActive } from "@/utils/reportAccess";
 import { formatWaktuWib, isLaporanRevised } from "@/utils/waktu";
+import {
+  cocokPencarian,
+  daftarTahunFilter,
+  hitungPetunjukTahun,
+  kegiatanWajibLaporPada,
+  opsiBulanFilter,
+  parseBulanParam,
+  parseTahunScope,
+  periodeVirtualUntukScope,
+  TAHUN_SEMUA,
+  tahunScopeValue,
+} from "@/utils/arsipFilter";
+import { kelompokkanPerKegiatan } from "@/utils/arsipGrup";
+import { getWibYearMonth } from "@/utils/tahunAnggaran";
 import { PermintaanAksesPanel } from "@/features/akses-lapor/components/permintaan-akses-panel";
 import { getReportDeadline as getReportDeadlineSettings } from "@/features/app-settings/actions";
 import {
@@ -38,8 +52,10 @@ export default async function ArsipPage({
   searchParams: Promise<{
     page?: string;
     q?: string;
-    periode?: string;
+    bulan?: string;
     status?: string;
+    tahun?: string;
+    tampilan?: string;
   }>;
 }) {
   const session = await getActiveSession();
@@ -49,11 +65,13 @@ export default async function ArsipPage({
 
   const params = await searchParams;
   const page = Math.max(1, Number(params.page ?? "1") || 1);
-  const q = params.q?.trim().toLowerCase() ?? "";
+  // Teks pencarian apa adanya untuk ditampilkan kembali; huruf kecil untuk mencocokkan.
+  const qRaw = params.q?.trim() ?? "";
+  const q = qRaw.toLowerCase();
   const statusParam =
     params.status && params.status !== "ALL" ? params.status : "ALL";
-  const periodeParam =
-    params.periode && params.periode !== "ALL" ? params.periode : "ALL";
+  // Bawaan: satu baris per kegiatan. "daftar" = tabel kegiatan x periode.
+  const tampilan = params.tampilan === "daftar" ? "daftar" : "kegiatan";
 
   const [kegiatanList, laporanList, availablePeriods] = await Promise.all([
     prisma.kegiatan.findMany({
@@ -89,19 +107,25 @@ export default async function ArsipPage({
   ]);
 
   const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
+  const nowMs = now.getTime();
+  // Bulan/tahun berjalan menurut WIB (bukan zona waktu server).
+  const { bulan: currentMonth, tahun: currentYear } = getWibYearMonth(nowMs);
   const activeMonth = currentMonth;
   const activeYear = currentYear;
 
-  let targetMonth: number | null = null;
-  let targetYear: number | null = null;
-
-  if (periodeParam !== "ALL" && periodeParam.includes("-")) {
-    const [b, t] = periodeParam.split("-");
-    targetMonth = Number(b);
-    targetYear = Number(t);
-  }
+  // Filter tahun: default tahun berjalan. Periode di luar cakupan tahun diabaikan.
+  const tahunScope = parseTahunScope(params.tahun, currentYear);
+  // Bulan hanya bermakna bila tahunnya spesifik; pada "Semua Tahun" diabaikan.
+  const bulanDipilih = parseBulanParam(params.bulan);
+  const periodeAktif =
+    bulanDipilih && !tahunScope.semua
+      ? { bulan: bulanDipilih, tahun: tahunScope.tahun }
+      : null;
+  const targetMonth = periodeAktif?.bulan ?? null;
+  const targetYear = periodeAktif?.tahun ?? null;
+  const laporanScoped = tahunScope.semua
+    ? laporanList
+    : laporanList.filter((l) => l.periodeTahun === tahunScope.tahun);
 
   // ── Bangun Matriks Arsip ────────────────────────────────────────────────
   const reportMetrics = aggregateActivityReports(kegiatanList.map((k) => ({ id: k.id, pagu: Number(k.pagu) })), laporanList.map((l) => ({ kegiatanId: l.kegiatanId, periodeBulan: l.periodeBulan, periodeTahun: l.periodeTahun, realIni: Number(l.realIni) })), { month: activeMonth, year: activeYear });
@@ -145,7 +169,15 @@ export default async function ArsipPage({
     }
 
     for (const k of kegiatanList) {
-      if (!uploadedKegiatanIds.has(k.id)) {
+      // Kegiatan hanya diharapkan melapor pada periode di dalam tahun anggarannya.
+      if (
+        !uploadedKegiatanIds.has(k.id) &&
+        kegiatanWajibLaporPada(
+          k.tahunAnggaran,
+          { bulan: targetMonth, tahun: targetYear },
+          nowMs,
+        )
+      ) {
         allItems.push({
           id: `unuploaded-${k.id}-${targetMonth}-${targetYear}`,
           kegiatanId: k.id,
@@ -171,7 +203,7 @@ export default async function ArsipPage({
     }
   } else {
     // Mode Semua Periode
-    for (const l of laporanList) {
+    for (const l of laporanScoped) {
       allItems.push({
         id: l.id,
         kegiatanId: l.kegiatanId,
@@ -198,27 +230,33 @@ export default async function ArsipPage({
       });
     }
 
-    const uploadedInDefault = new Set(
-      laporanList
-        .filter(
-          (l) =>
-            l.periodeBulan === activeMonth && l.periodeTahun === activeYear,
-        )
-        .map((l) => l.kegiatanId),
+    // Baris "Belum Upload": untuk setiap periode yang relevan pada tahun terpilih,
+    // kegiatan yang tahun anggarannya sesuai dan belum punya laporan.
+    const sudahLapor = new Set(
+      laporanList.map((l) => `${l.kegiatanId}-${l.periodeBulan}-${l.periodeTahun}`),
     );
-
-    const activePeriodLabel = `${NAMA_BULAN[activeMonth - 1]} ${activeYear}`;
-    for (const k of kegiatanList) {
-      if (!uploadedInDefault.has(k.id)) {
+    for (const periode of periodeVirtualUntukScope(
+      tahunScope,
+      nowMs,
+      kegiatanList.map((k) => k.tahunAnggaran),
+    )) {
+      const periodeLabel = `${NAMA_BULAN[periode.bulan - 1]} ${periode.tahun}`;
+      for (const k of kegiatanList) {
+        if (
+          sudahLapor.has(`${k.id}-${periode.bulan}-${periode.tahun}`) ||
+          !kegiatanWajibLaporPada(k.tahunAnggaran, periode, nowMs)
+        ) {
+          continue;
+        }
         allItems.push({
-          id: `unuploaded-${k.id}-${activeMonth}-${activeYear}`,
+          id: `unuploaded-${k.id}-${periode.bulan}-${periode.tahun}`,
           kegiatanId: k.id,
           laporanId: null,
           kode: k.kode,
           nama: k.nama,
-          periode: activePeriodLabel,
-          periodeBulan: activeMonth,
-          periodeTahun: activeYear,
+          periode: periodeLabel,
+          periodeBulan: periode.bulan,
+          periodeTahun: periode.tahun,
           jenis: k.jenis || "APBN",
           pjNama: k.pj?.name || "PJ Belum Ditentukan",
           pjEmail: k.pj?.email || "-",
@@ -275,12 +313,8 @@ export default async function ArsipPage({
   let filteredItems = allItems;
 
   if (q) {
-    filteredItems = filteredItems.filter(
-      (item) =>
-        item.kode.toLowerCase().includes(q) ||
-        item.nama.toLowerCase().includes(q) ||
-        item.pjNama.toLowerCase().includes(q) ||
-        item.pjEmail.toLowerCase().includes(q),
+    filteredItems = filteredItems.filter((item) =>
+      cocokPencarian(q, item.kode, item.nama, item.pjNama, item.pjEmail),
     );
   }
 
@@ -294,47 +328,62 @@ export default async function ArsipPage({
     );
   }
 
-  const totalFiltered = filteredItems.length;
+  // Tampilan Per kegiatan: halaman dan total dihitung per kegiatan, bukan per baris.
+  const grupSemua =
+    tampilan === "kegiatan" ? kelompokkanPerKegiatan(filteredItems, allItems) : [];
+  const totalFiltered =
+    tampilan === "kegiatan" ? grupSemua.length : filteredItems.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
 
   if (page > totalPages) {
     const next = new URLSearchParams();
     next.set("page", String(totalPages));
     if (params.q) next.set("q", params.q);
-    if (params.periode) next.set("periode", params.periode);
+    if (params.bulan) next.set("bulan", params.bulan);
+    if (params.tahun) next.set("tahun", params.tahun);
     if (params.status) next.set("status", params.status);
+    if (params.tampilan) next.set("tampilan", params.tampilan);
     redirect(`/admin/arsip-sp2d?${next.toString()}`);
   }
 
-  const paginatedItems = filteredItems.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE,
+  const paginatedItems =
+    tampilan === "daftar"
+      ? filteredItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+      : [];
+  const tahunPerKegiatan = new Map(kegiatanList.map((k) => [k.id, k.tahunAnggaran]));
+  const grupList = grupSemua
+    .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+    .map((g) => ({ ...g, tahunAnggaran: tahunPerKegiatan.get(g.kegiatanId) ?? 0 }));
+
+  const periodeLaporanTersedia = availablePeriods.map((p) => ({
+    bulan: p.periodeBulan,
+    tahun: p.periodeTahun,
+  }));
+  const tahunTersedia = daftarTahunFilter(
+    kegiatanList.map((k) => k.tahunAnggaran),
+    periodeLaporanTersedia.map((p) => p.tahun),
+    currentYear,
   );
-
-  const periodOptionsMap = new Map<string, string>();
-
-  for (const p of availablePeriods) {
-    const key = `${p.periodeBulan}-${p.periodeTahun}`;
-    periodOptionsMap.set(
-      key,
-      `${NAMA_BULAN[p.periodeBulan - 1]} ${p.periodeTahun}`,
-    );
-  }
-
-  for (let bulan = 1; bulan <= currentMonth; bulan++) {
-    const key = `${bulan}-${currentYear}`;
-    if (!periodOptionsMap.has(key)) {
-      periodOptionsMap.set(key, `${NAMA_BULAN[bulan - 1]} ${currentYear}`);
-    }
-  }
-
-  const periodOptions = Array.from(periodOptionsMap.entries())
-    .map(([value, label]) => ({ value, label }))
-    .sort((a, b) => {
-      const [bMa, tMa] = a.value.split("-").map(Number);
-      const [bMb, tMb] = b.value.split("-").map(Number);
-      return tMb !== tMa ? tMb - tMa : bMb - bMa;
-    });
+  const bulanOptions = opsiBulanFilter(tahunScope, periodeLaporanTersedia, nowMs);
+  // Saat tabel kosong tanpa filter bulan/status: beri tahu tahun lain yang punya kegiatan.
+  const petunjukTahun =
+    totalFiltered === 0 && statusParam === "ALL" && !periodeAktif
+      ? hitungPetunjukTahun(
+          kegiatanList.map((k) => ({
+            tahunAnggaran: k.tahunAnggaran,
+            kode: k.kode,
+            nama: k.nama,
+            pjNama: k.pj?.name ?? "",
+            pjEmail: k.pj?.email ?? "",
+          })),
+          q,
+          tahunScope,
+        )
+      : [];
+  const tahunOptions = [
+    { value: TAHUN_SEMUA, label: "Semua Tahun" },
+    ...tahunTersedia.map((t) => ({ value: String(t), label: String(t) })),
+  ];
 
   // Permintaan akses lapor dari PJ yang menunggu keputusan admin.
   const permintaanMenunggu = await prisma.reportAccessRequest.findMany({
@@ -361,6 +410,8 @@ export default async function ArsipPage({
       <PermintaanAksesPanel items={permintaanItems} />
       <MasterArsipSMARTPage
         arsipList={paginatedItems}
+        grupList={grupList}
+        tampilan={tampilan}
         stats={{ total: totalCount, sudah: sudahCount, belum: belumCount }}
         pagination={{
           page,
@@ -368,8 +419,15 @@ export default async function ArsipPage({
           total: totalFiltered,
           pageSize: PAGE_SIZE,
         }}
-        periodOptions={periodOptions}
-        currentParams={{ q, periode: periodeParam, status: statusParam }}
+        bulanOptions={bulanOptions}
+        tahunOptions={tahunOptions}
+        petunjukTahun={petunjukTahun}
+        currentParams={{
+          q: qRaw,
+          bulan: periodeAktif ? String(periodeAktif.bulan) : "ALL",
+          status: statusParam,
+          tahun: tahunScopeValue(tahunScope),
+        }}
       />
     </div>
   );

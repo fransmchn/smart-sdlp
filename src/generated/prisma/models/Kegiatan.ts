@@ -30,6 +30,7 @@ export type KegiatanAvgAggregateOutputType = {
   pagu: number | null
   realisasi: number | null
   fisik: number | null
+  tahunAnggaran: number | null
   realLalu: number | null
   realIni: number | null
 }
@@ -38,6 +39,7 @@ export type KegiatanSumAggregateOutputType = {
   pagu: bigint | null
   realisasi: bigint | null
   fisik: number | null
+  tahunAnggaran: number | null
   realLalu: bigint | null
   realIni: bigint | null
 }
@@ -54,6 +56,7 @@ export type KegiatanMinAggregateOutputType = {
   fisik: number | null
   uraian: string | null
   statusAnggaran: $Enums.StatusAnggaran | null
+  tahunAnggaran: number | null
   realLalu: bigint | null
   realIni: bigint | null
   wajib: boolean | null
@@ -75,6 +78,7 @@ export type KegiatanMaxAggregateOutputType = {
   fisik: number | null
   uraian: string | null
   statusAnggaran: $Enums.StatusAnggaran | null
+  tahunAnggaran: number | null
   realLalu: bigint | null
   realIni: bigint | null
   wajib: boolean | null
@@ -96,6 +100,7 @@ export type KegiatanCountAggregateOutputType = {
   fisik: number
   uraian: number
   statusAnggaran: number
+  tahunAnggaran: number
   realLalu: number
   realIni: number
   wajib: number
@@ -111,6 +116,7 @@ export type KegiatanAvgAggregateInputType = {
   pagu?: true
   realisasi?: true
   fisik?: true
+  tahunAnggaran?: true
   realLalu?: true
   realIni?: true
 }
@@ -119,6 +125,7 @@ export type KegiatanSumAggregateInputType = {
   pagu?: true
   realisasi?: true
   fisik?: true
+  tahunAnggaran?: true
   realLalu?: true
   realIni?: true
 }
@@ -135,6 +142,7 @@ export type KegiatanMinAggregateInputType = {
   fisik?: true
   uraian?: true
   statusAnggaran?: true
+  tahunAnggaran?: true
   realLalu?: true
   realIni?: true
   wajib?: true
@@ -156,6 +164,7 @@ export type KegiatanMaxAggregateInputType = {
   fisik?: true
   uraian?: true
   statusAnggaran?: true
+  tahunAnggaran?: true
   realLalu?: true
   realIni?: true
   wajib?: true
@@ -177,6 +186,7 @@ export type KegiatanCountAggregateInputType = {
   fisik?: true
   uraian?: true
   statusAnggaran?: true
+  tahunAnggaran?: true
   realLalu?: true
   realIni?: true
   wajib?: true
@@ -285,6 +295,7 @@ export type KegiatanGroupByOutputType = {
   fisik: number | null
   uraian: string | null
   statusAnggaran: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu: bigint | null
   realIni: bigint | null
   wajib: boolean
@@ -329,6 +340,7 @@ export type KegiatanWhereInput = {
   fisik?: Prisma.IntNullableFilter<"Kegiatan"> | number | null
   uraian?: Prisma.StringNullableFilter<"Kegiatan"> | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFilter<"Kegiatan"> | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFilter<"Kegiatan"> | number
   realLalu?: Prisma.BigIntNullableFilter<"Kegiatan"> | bigint | number | null
   realIni?: Prisma.BigIntNullableFilter<"Kegiatan"> | bigint | number | null
   wajib?: Prisma.BoolFilter<"Kegiatan"> | boolean
@@ -356,6 +368,7 @@ export type KegiatanOrderByWithRelationInput = {
   fisik?: Prisma.SortOrderInput | Prisma.SortOrder
   uraian?: Prisma.SortOrderInput | Prisma.SortOrder
   statusAnggaran?: Prisma.SortOrder
+  tahunAnggaran?: Prisma.SortOrder
   realLalu?: Prisma.SortOrderInput | Prisma.SortOrder
   realIni?: Prisma.SortOrderInput | Prisma.SortOrder
   wajib?: Prisma.SortOrder
@@ -386,6 +399,7 @@ export type KegiatanWhereUniqueInput = Prisma.AtLeast<{
   fisik?: Prisma.IntNullableFilter<"Kegiatan"> | number | null
   uraian?: Prisma.StringNullableFilter<"Kegiatan"> | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFilter<"Kegiatan"> | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFilter<"Kegiatan"> | number
   realLalu?: Prisma.BigIntNullableFilter<"Kegiatan"> | bigint | number | null
   realIni?: Prisma.BigIntNullableFilter<"Kegiatan"> | bigint | number | null
   wajib?: Prisma.BoolFilter<"Kegiatan"> | boolean
@@ -413,6 +427,7 @@ export type KegiatanOrderByWithAggregationInput = {
   fisik?: Prisma.SortOrderInput | Prisma.SortOrder
   uraian?: Prisma.SortOrderInput | Prisma.SortOrder
   statusAnggaran?: Prisma.SortOrder
+  tahunAnggaran?: Prisma.SortOrder
   realLalu?: Prisma.SortOrderInput | Prisma.SortOrder
   realIni?: Prisma.SortOrderInput | Prisma.SortOrder
   wajib?: Prisma.SortOrder
@@ -442,6 +457,7 @@ export type KegiatanScalarWhereWithAggregatesInput = {
   fisik?: Prisma.IntNullableWithAggregatesFilter<"Kegiatan"> | number | null
   uraian?: Prisma.StringNullableWithAggregatesFilter<"Kegiatan"> | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranWithAggregatesFilter<"Kegiatan"> | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntWithAggregatesFilter<"Kegiatan"> | number
   realLalu?: Prisma.BigIntNullableWithAggregatesFilter<"Kegiatan"> | bigint | number | null
   realIni?: Prisma.BigIntNullableWithAggregatesFilter<"Kegiatan"> | bigint | number | null
   wajib?: Prisma.BoolWithAggregatesFilter<"Kegiatan"> | boolean
@@ -462,6 +478,7 @@ export type KegiatanCreateInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -488,6 +505,7 @@ export type KegiatanUncheckedCreateInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -512,6 +530,7 @@ export type KegiatanUpdateInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -538,6 +557,7 @@ export type KegiatanUncheckedUpdateInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -563,6 +583,7 @@ export type KegiatanCreateManyInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -583,6 +604,7 @@ export type KegiatanUpdateManyMutationInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -603,6 +625,7 @@ export type KegiatanUncheckedUpdateManyInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -634,6 +657,7 @@ export type KegiatanCountOrderByAggregateInput = {
   fisik?: Prisma.SortOrder
   uraian?: Prisma.SortOrder
   statusAnggaran?: Prisma.SortOrder
+  tahunAnggaran?: Prisma.SortOrder
   realLalu?: Prisma.SortOrder
   realIni?: Prisma.SortOrder
   wajib?: Prisma.SortOrder
@@ -647,6 +671,7 @@ export type KegiatanAvgOrderByAggregateInput = {
   pagu?: Prisma.SortOrder
   realisasi?: Prisma.SortOrder
   fisik?: Prisma.SortOrder
+  tahunAnggaran?: Prisma.SortOrder
   realLalu?: Prisma.SortOrder
   realIni?: Prisma.SortOrder
 }
@@ -663,6 +688,7 @@ export type KegiatanMaxOrderByAggregateInput = {
   fisik?: Prisma.SortOrder
   uraian?: Prisma.SortOrder
   statusAnggaran?: Prisma.SortOrder
+  tahunAnggaran?: Prisma.SortOrder
   realLalu?: Prisma.SortOrder
   realIni?: Prisma.SortOrder
   wajib?: Prisma.SortOrder
@@ -684,6 +710,7 @@ export type KegiatanMinOrderByAggregateInput = {
   fisik?: Prisma.SortOrder
   uraian?: Prisma.SortOrder
   statusAnggaran?: Prisma.SortOrder
+  tahunAnggaran?: Prisma.SortOrder
   realLalu?: Prisma.SortOrder
   realIni?: Prisma.SortOrder
   wajib?: Prisma.SortOrder
@@ -697,6 +724,7 @@ export type KegiatanSumOrderByAggregateInput = {
   pagu?: Prisma.SortOrder
   realisasi?: Prisma.SortOrder
   fisik?: Prisma.SortOrder
+  tahunAnggaran?: Prisma.SortOrder
   realLalu?: Prisma.SortOrder
   realIni?: Prisma.SortOrder
 }
@@ -896,6 +924,7 @@ export type KegiatanCreateWithoutPjInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -921,6 +950,7 @@ export type KegiatanUncheckedCreateWithoutPjInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -974,6 +1004,7 @@ export type KegiatanScalarWhereInput = {
   fisik?: Prisma.IntNullableFilter<"Kegiatan"> | number | null
   uraian?: Prisma.StringNullableFilter<"Kegiatan"> | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFilter<"Kegiatan"> | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFilter<"Kegiatan"> | number
   realLalu?: Prisma.BigIntNullableFilter<"Kegiatan"> | bigint | number | null
   realIni?: Prisma.BigIntNullableFilter<"Kegiatan"> | bigint | number | null
   wajib?: Prisma.BoolFilter<"Kegiatan"> | boolean
@@ -994,6 +1025,7 @@ export type KegiatanCreateWithoutProgramCategoryRefInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -1018,6 +1050,7 @@ export type KegiatanUncheckedCreateWithoutProgramCategoryRefInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -1068,6 +1101,7 @@ export type KegiatanCreateWithoutLaporanInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -1093,6 +1127,7 @@ export type KegiatanUncheckedCreateWithoutLaporanInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -1132,6 +1167,7 @@ export type KegiatanUpdateWithoutLaporanInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1157,6 +1193,7 @@ export type KegiatanUncheckedUpdateWithoutLaporanInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1180,6 +1217,7 @@ export type KegiatanCreateWithoutDokumenInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -1205,6 +1243,7 @@ export type KegiatanUncheckedCreateWithoutDokumenInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -1244,6 +1283,7 @@ export type KegiatanUpdateWithoutDokumenInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1269,6 +1309,7 @@ export type KegiatanUncheckedUpdateWithoutDokumenInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1292,6 +1333,7 @@ export type KegiatanCreateWithoutAccessOverridesInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -1317,6 +1359,7 @@ export type KegiatanUncheckedCreateWithoutAccessOverridesInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -1356,6 +1399,7 @@ export type KegiatanUpdateWithoutAccessOverridesInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1381,6 +1425,7 @@ export type KegiatanUncheckedUpdateWithoutAccessOverridesInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1404,6 +1449,7 @@ export type KegiatanCreateWithoutAccessRequestsInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -1429,6 +1475,7 @@ export type KegiatanUncheckedCreateWithoutAccessRequestsInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -1468,6 +1515,7 @@ export type KegiatanUpdateWithoutAccessRequestsInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1493,6 +1541,7 @@ export type KegiatanUncheckedUpdateWithoutAccessRequestsInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1517,6 +1566,7 @@ export type KegiatanCreateManyPjInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -1536,6 +1586,7 @@ export type KegiatanUpdateWithoutPjInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1561,6 +1612,7 @@ export type KegiatanUncheckedUpdateWithoutPjInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1585,6 +1637,7 @@ export type KegiatanUncheckedUpdateManyWithoutPjInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1604,6 +1657,7 @@ export type KegiatanCreateManyProgramCategoryRefInput = {
   fisik?: number | null
   uraian?: string | null
   statusAnggaran?: $Enums.StatusAnggaran
+  tahunAnggaran: number
   realLalu?: bigint | number | null
   realIni?: bigint | number | null
   wajib?: boolean
@@ -1624,6 +1678,7 @@ export type KegiatanUpdateWithoutProgramCategoryRefInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1648,6 +1703,7 @@ export type KegiatanUncheckedUpdateWithoutProgramCategoryRefInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1672,6 +1728,7 @@ export type KegiatanUncheckedUpdateManyWithoutProgramCategoryRefInput = {
   fisik?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   uraian?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   statusAnggaran?: Prisma.EnumStatusAnggaranFieldUpdateOperationsInput | $Enums.StatusAnggaran
+  tahunAnggaran?: Prisma.IntFieldUpdateOperationsInput | number
   realLalu?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   realIni?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   wajib?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1751,6 +1808,7 @@ export type KegiatanSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   fisik?: boolean
   uraian?: boolean
   statusAnggaran?: boolean
+  tahunAnggaran?: boolean
   realLalu?: boolean
   realIni?: boolean
   wajib?: boolean
@@ -1779,6 +1837,7 @@ export type KegiatanSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   fisik?: boolean
   uraian?: boolean
   statusAnggaran?: boolean
+  tahunAnggaran?: boolean
   realLalu?: boolean
   realIni?: boolean
   wajib?: boolean
@@ -1802,6 +1861,7 @@ export type KegiatanSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   fisik?: boolean
   uraian?: boolean
   statusAnggaran?: boolean
+  tahunAnggaran?: boolean
   realLalu?: boolean
   realIni?: boolean
   wajib?: boolean
@@ -1825,6 +1885,7 @@ export type KegiatanSelectScalar = {
   fisik?: boolean
   uraian?: boolean
   statusAnggaran?: boolean
+  tahunAnggaran?: boolean
   realLalu?: boolean
   realIni?: boolean
   wajib?: boolean
@@ -1834,7 +1895,7 @@ export type KegiatanSelectScalar = {
   updatedAt?: boolean
 }
 
-export type KegiatanOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "kode" | "nama" | "jenis" | "programCategory" | "programCategoryId" | "pagu" | "realisasi" | "fisik" | "uraian" | "statusAnggaran" | "realLalu" | "realIni" | "wajib" | "sudahLapor" | "pjId" | "createdAt" | "updatedAt", ExtArgs["result"]["kegiatan"]>
+export type KegiatanOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "kode" | "nama" | "jenis" | "programCategory" | "programCategoryId" | "pagu" | "realisasi" | "fisik" | "uraian" | "statusAnggaran" | "tahunAnggaran" | "realLalu" | "realIni" | "wajib" | "sudahLapor" | "pjId" | "createdAt" | "updatedAt", ExtArgs["result"]["kegiatan"]>
 export type KegiatanInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   programCategoryRef?: boolean | Prisma.Kegiatan$programCategoryRefArgs<ExtArgs>
   pj?: boolean | Prisma.Kegiatan$pjArgs<ExtArgs>
@@ -1875,6 +1936,7 @@ export type $KegiatanPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     fisik: number | null
     uraian: string | null
     statusAnggaran: $Enums.StatusAnggaran
+    tahunAnggaran: number
     realLalu: bigint | null
     realIni: bigint | null
     wajib: boolean
@@ -2322,6 +2384,7 @@ export interface KegiatanFieldRefs {
   readonly fisik: Prisma.FieldRef<"Kegiatan", 'Int'>
   readonly uraian: Prisma.FieldRef<"Kegiatan", 'String'>
   readonly statusAnggaran: Prisma.FieldRef<"Kegiatan", 'StatusAnggaran'>
+  readonly tahunAnggaran: Prisma.FieldRef<"Kegiatan", 'Int'>
   readonly realLalu: Prisma.FieldRef<"Kegiatan", 'BigInt'>
   readonly realIni: Prisma.FieldRef<"Kegiatan", 'BigInt'>
   readonly wajib: Prisma.FieldRef<"Kegiatan", 'Boolean'>

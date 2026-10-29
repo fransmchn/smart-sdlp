@@ -10,6 +10,12 @@ import {
   PESAN_KEGIATAN_DIBLOKIR,
 } from "@/utils/reportAccess";
 import {
+  isPeriodeDalamTahunAnggaran,
+  isPeriodeSudahBerjalan,
+  pesanDiluarTahunAnggaran,
+  pesanPeriodeBelumBerjalan,
+} from "@/utils/tahunAnggaran";
+import {
   formatReportDeadline,
   getReportDeadline,
 } from "@/utils/reportDeadline";
@@ -84,6 +90,20 @@ export async function submitLaporan(
         // Kegiatan diblokir: tidak boleh ada laporan baru maupun revisi.
         if (kegiatan.statusAnggaran === "DIBLOKIR") {
           return { success: false, error: PESAN_KEGIATAN_DIBLOKIR };
+        }
+        // Laporan hanya sah untuk periode di dalam tahun anggaran kegiatan.
+        if (!isPeriodeDalamTahunAnggaran(data.periodeTahun, kegiatan.tahunAnggaran)) {
+          return {
+            success: false,
+            error: pesanDiluarTahunAnggaran(kegiatan.tahunAnggaran),
+          };
+        }
+        // Periode di masa depan (termasuk tahun anggaran yang belum dimulai) belum boleh dilaporkan.
+        if (!isPeriodeSudahBerjalan(Date.now(), data.periodeBulan, data.periodeTahun)) {
+          return {
+            success: false,
+            error: pesanPeriodeBelumBerjalan(data.periodeBulan, data.periodeTahun),
+          };
         }
 
         const settings = await tx.appSettings.findFirst();

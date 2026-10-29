@@ -8,9 +8,14 @@ import { submitLaporan } from "@/features/laproran/actions";
 import { mintaAksesLapor } from "@/features/akses-lapor/actions";
 import {
   canSubmitReport,
+  formatPeriodeLabel,
   getAccessRequestState,
   PESAN_KEGIATAN_DIBLOKIR,
 } from "@/utils/reportAccess";
+import {
+  buatOpsiPeriode,
+  pesanTahunAnggaranBelumDimulai,
+} from "@/utils/tahunAnggaran";
 import {
   formatReportDeadline,
   getReportDeadline,
@@ -24,6 +29,7 @@ type KegiatanForInput = {
   jenis: string;
   pagu: number;
   statusAnggaran: "Dibuka" | "Diblokir";
+  tahunAnggaran: number;
   uraian: string;
   realLalu: number;
   realIni: number;
@@ -74,21 +80,6 @@ interface InputLaporanPageProps {
   serverNow: number;
 }
 
-const NAMA_BULAN = [
-  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
-];
-
-function generatePeriodeOptions(nowMs: number) {
-  const wibNow = new Date(nowMs + 7 * 60 * 60 * 1000);
-  const tahun = wibNow.getUTCFullYear();
-  const bulanSekarang = wibNow.getUTCMonth() + 1;
-  return Array.from({ length: bulanSekarang }, (_, index) => {
-    const bulan = bulanSekarang - index;
-    return { label: `${NAMA_BULAN[bulan - 1]} ${tahun}`, bulan, tahun };
-  });
-}
-
 export function InputLaporanPage({
   kegiatanList,
   initialSelectedKode,
@@ -110,13 +101,26 @@ export function InputLaporanPage({
   const [requestReason, setRequestReason] = useState("");
   const [isRequesting, startRequest] = useTransition();
 
-  const periodeOptions = useMemo(
-    () => generatePeriodeOptions(serverNow),
-    [serverNow],
-  );
-  const periode = periodeOptions[periodeIndex] ?? periodeOptions[0];
   const activeKegiatan =
     kegiatanList.find((kegiatan) => kegiatan.kode === selectedKode) ?? kegiatanList[0];
+  // Periode yang bisa dipilih mengikuti tahun anggaran kegiatan yang dipilih.
+  const periodeOptions = useMemo(
+    () => buatOpsiPeriode(serverNow, activeKegiatan.tahunAnggaran),
+    [serverNow, activeKegiatan.tahunAnggaran],
+  );
+  // Tahun anggaran yang belum dimulai belum punya periode. Januari TA dipakai
+  // sebagai penampung tampilan, dan formulir dikunci.
+  const belumDimulai = periodeOptions.length === 0;
+  const opsiTampil = belumDimulai
+    ? [
+        {
+          label: formatPeriodeLabel(1, activeKegiatan.tahunAnggaran),
+          bulan: 1,
+          tahun: activeKegiatan.tahunAnggaran,
+        },
+      ]
+    : periodeOptions;
+  const periode = opsiTampil[periodeIndex] ?? opsiTampil[0];
 
   useEffect(() => {
     const timer = window.setInterval(() => setClientNow(Date.now()), 30_000);
@@ -175,7 +179,7 @@ export function InputLaporanPage({
   const isRevision = Boolean(calc.existingLaporan);
   const isBlocked = activeKegiatan.statusAnggaran === "Diblokir";
   // Form tidak bisa diisi bila batas waktu lewat tanpa akses, atau kegiatan diblokir.
-  const isLocked = isReadOnly || isBlocked;
+  const isLocked = isReadOnly || isBlocked || belumDimulai;
 
   // Permintaan akses terbaru untuk kegiatan dan bulan ini (daftar sudah terurut terbaru lebih dulu).
   const permintaanTerbaru = accessRequests.find(
@@ -188,7 +192,7 @@ export function InputLaporanPage({
     deadlinePassed,
     accessActive,
     latestRequestStatus: permintaanTerbaru?.status ?? null,
-    blocked: isBlocked,
+    blocked: isBlocked || belumDimulai,
   });
 
   const handleRequestAccess = () => {
@@ -240,6 +244,14 @@ export function InputLaporanPage({
   const handleSave = () => {
     if (isBlocked) {
       showToast("error", "Kegiatan diblokir", PESAN_KEGIATAN_DIBLOKIR);
+      return;
+    }
+    if (belumDimulai) {
+      showToast(
+        "error",
+        "Tahun anggaran belum dimulai",
+        pesanTahunAnggaranBelumDimulai(activeKegiatan.tahunAnggaran),
+      );
       return;
     }
     if (isReadOnly) {
@@ -344,18 +356,26 @@ export function InputLaporanPage({
                 {PESAN_KEGIATAN_DIBLOKIR}
               </div>
             )}
+            {belumDimulai && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                {pesanTahunAnggaranBelumDimulai(activeKegiatan.tahunAnggaran)}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
               <label className="space-y-1 sm:col-span-6">
                 <span className="block text-xs font-semibold text-slate-700">Pilih Kegiatan Yang Dilaporkan *</span>
                 <select
                   value={selectedKode}
-                  onChange={(event) => setSelectedKode(event.target.value)}
+                  onChange={(event) => {
+                    setSelectedKode(event.target.value);
+                    setPeriodeIndex(0);
+                  }}
                   className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#E28B59]"
                 >
                   {kegiatanList.map((kegiatan) => (
                     <option key={kegiatan.kode} value={kegiatan.kode}>
-                      [{kegiatan.jenis}] {kegiatan.kode} — {kegiatan.nama}
+                      [{kegiatan.jenis}] {kegiatan.kode} — {kegiatan.nama} (TA {kegiatan.tahunAnggaran})
                     </option>
                   ))}
                 </select>
@@ -365,9 +385,10 @@ export function InputLaporanPage({
                 <select
                   value={periodeIndex}
                   onChange={(event) => setPeriodeIndex(Number(event.target.value))}
+                  disabled={belumDimulai}
                   className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#E28B59]"
                 >
-                  {periodeOptions.map((item, index) => (
+                  {opsiTampil.map((item, index) => (
                     <option key={item.label} value={index}>{item.label}</option>
                   ))}
                 </select>

@@ -21,6 +21,10 @@ import {
   formatReportDeadline,
   isReportDeadlinePassed,
 } from "@/utils/reportDeadline";
+import {
+  isPeriodeDalamTahunAnggaran,
+  pesanDiluarTahunAnggaran,
+} from "@/utils/tahunAnggaran";
 
 // -----------------------------------------------------------------------------
 // Aturan input
@@ -177,6 +181,10 @@ async function openAccessCore(params: OpenAccessParams): Promise<AksesLaporResul
         success: false,
         error: `${PESAN_KEGIATAN_DIBLOKIR} Buka blokir terlebih dahulu sebelum membuka akses lapor.`,
       };
+    }
+    // Akses untuk periode di luar tahun anggaran tidak berguna: laporannya pasti ditolak.
+    if (!isPeriodeDalamTahunAnggaran(params.periodeTahun, kegiatan.tahunAnggaran)) {
+      return { success: false, error: pesanDiluarTahunAnggaran(kegiatan.tahunAnggaran) };
     }
     if (!kegiatan.pj) {
       return {
@@ -397,7 +405,14 @@ export async function mintaAksesLapor(
   try {
     const kegiatan = await prisma.kegiatan.findUnique({
       where: { id: data.kegiatanId },
-      select: { id: true, kode: true, nama: true, pjId: true, statusAnggaran: true },
+      select: {
+        id: true,
+        kode: true,
+        nama: true,
+        pjId: true,
+        statusAnggaran: true,
+        tahunAnggaran: true,
+      },
     });
     if (!kegiatan) {
       return { success: false, error: "Kegiatan tidak ditemukan." };
@@ -407,6 +422,9 @@ export async function mintaAksesLapor(
     }
     if (kegiatan.statusAnggaran === "DIBLOKIR") {
       return { success: false, error: PESAN_KEGIATAN_DIBLOKIR };
+    }
+    if (!isPeriodeDalamTahunAnggaran(data.periodeTahun, kegiatan.tahunAnggaran)) {
+      return { success: false, error: pesanDiluarTahunAnggaran(kegiatan.tahunAnggaran) };
     }
     const settings = await prisma.appSettings.findFirst();
     const deadlineSettings = {

@@ -91,6 +91,7 @@ const kegiatanBlocked = await createKegiatan({
   programCategoryId: "prog-1",
   pagu: 10000000,
   statusAnggaran: "DIBUKA",
+  tahunAnggaran: 2026,
 });
 assert.equal(kegiatanBlocked.success, false);
 assert.equal(kegiatanBlocked.error, "Wajib ganti kata sandi terlebih dahulu.");
@@ -111,6 +112,7 @@ const kegiatanUserDenied = await createKegiatan({
   programCategoryId: "prog-1",
   pagu: 10000000,
   statusAnggaran: "DIBUKA",
+  tahunAnggaran: 2026,
 });
 assert.equal(kegiatanUserDenied.success, false);
 assert.equal(kegiatanUserDenied.error, "Hanya admin yang bisa menambahkan kegiatan.");

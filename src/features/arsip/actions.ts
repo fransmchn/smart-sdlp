@@ -7,6 +7,10 @@ import { createUserNotification } from "@/lib/notifications";
 import { recordAdminAudit } from "@/lib/audit";
 import { buildLaporanSnapshot } from "@/utils/laporanSnapshot";
 import {
+  isPeriodeDalamTahunAnggaran,
+  pesanDiluarTahunAnggaran,
+} from "@/utils/tahunAnggaran";
+import {
   computeAccessOpenedUntil,
   formatPeriodeLabel,
   getReminderMode,
@@ -319,6 +323,12 @@ export async function ingatkanPJ(
         success: false,
         error:
           "Kegiatan ini sedang diblokir, PJ tidak dapat mengisi laporan sehingga tidak perlu diingatkan.",
+      };
+    }
+    if (!isPeriodeDalamTahunAnggaran(periodeTahun, kegiatan.tahunAnggaran)) {
+      return {
+        success: false,
+        error: `${pesanDiluarTahunAnggaran(kegiatan.tahunAnggaran)} PJ tidak perlu diingatkan untuk periode ini.`,
       };
     }
 

@@ -6,6 +6,19 @@ import { getActionSession } from "@/lib/active-session";
 import { z } from "zod";
 import { recordAdminAudit } from "@/lib/audit";
 import { cabutAksesSaatDiblokir } from "@/lib/report-access-cleanup";
+import {
+  bisaUbahTahunAnggaran,
+  isTahunAnggaranValid,
+  pesanTahunAnggaranTidakBisaDiubah,
+  TAHUN_ANGGARAN_MAX,
+  TAHUN_ANGGARAN_MIN,
+} from "@/utils/tahunAnggaran";
+
+const tahunAnggaranSchema = z.coerce
+  .number()
+  .refine(isTahunAnggaranValid, {
+    message: `Tahun anggaran harus berupa tahun antara ${TAHUN_ANGGARAN_MIN} dan ${TAHUN_ANGGARAN_MAX}`,
+  });
 
 const createKegiatanSchema = z.object({
   kode: z.string().min(1, "Kode kegiatan wajib diisi"),
@@ -16,6 +29,7 @@ const createKegiatanSchema = z.object({
   pjId: z.string().optional(),
   uraian: z.string().optional(),
   statusAnggaran: z.enum(["DIBUKA", "DIBLOKIR"]).default("DIBUKA"),
+  tahunAnggaran: tahunAnggaranSchema,
 });
 
 export type CreateKegiatanInput = z.infer<typeof createKegiatanSchema>;
@@ -93,6 +107,7 @@ export async function createKegiatan(
       uraian: data.uraian || null,
       pjId: data.pjId || null,
       statusAnggaran: data.statusAnggaran,
+      tahunAnggaran: data.tahunAnggaran,
       wajib: true,
     },
     include: {
@@ -135,6 +150,7 @@ const updateKegiatanSchema = z.object({
   pjId: z.string().optional(),
   uraian: z.string().optional(),
   statusAnggaran: z.enum(["DIBUKA", "DIBLOKIR"]).default("DIBUKA"),
+  tahunAnggaran: tahunAnggaranSchema,
 });
 
 export type UpdateKegiatanInput = z.infer<typeof updateKegiatanSchema>;
@@ -212,6 +228,21 @@ export async function updateKegiatan(
     };
   }
 
+  if (data.tahunAnggaran !== target.tahunAnggaran) {
+    const laporanAda = await prisma.laporan.findMany({
+      where: { kegiatanId: data.id },
+      select: { periodeTahun: true },
+      distinct: ["periodeTahun"],
+    });
+    const tahunLaporan = laporanAda.map((l) => l.periodeTahun);
+    if (!bisaUbahTahunAnggaran(data.tahunAnggaran, tahunLaporan)) {
+      return {
+        success: false,
+        error: pesanTahunAnggaranTidakBisaDiubah(data.tahunAnggaran, tahunLaporan),
+      };
+    }
+  }
+
   const kegiatan = await prisma.$transaction(async (tx) => {
   const kegiatan = await tx.kegiatan.update({
     where: { id: data.id },
@@ -224,6 +255,7 @@ export async function updateKegiatan(
       uraian: data.uraian || null,
       pjId: data.pjId || null,
        statusAnggaran: data.statusAnggaran,
+      tahunAnggaran: data.tahunAnggaran,
     },
     include: {
       pj: { select: { id: true, name: true, email: true } },

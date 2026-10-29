@@ -1616,6 +1616,7 @@ export const KegiatanScalarFieldEnum = {
   fisik: 'fisik',
   uraian: 'uraian',
   statusAnggaran: 'statusAnggaran',
+  tahunAnggaran: 'tahunAnggaran',
   realLalu: 'realLalu',
   realIni: 'realIni',
   wajib: 'wajib',
