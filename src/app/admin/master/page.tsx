@@ -4,6 +4,7 @@ import { ManajemenKegiatanPage } from "@/features/admin/manage-activities/compon
 import { redirect } from "next/navigation";
 import { aggregateActivityReports } from "@/utils/reportAggregation";
 import { getReportDeadline } from "@/features/app-settings/actions";
+import { getWibYearMonth } from "@/utils/tahunAnggaran";
 
 const PAGE_SIZE = 5;
 const WAJIB_PAGE_SIZE = 5;
@@ -149,6 +150,7 @@ export default async function Page({
       order={order}
       pjOptions={pjOptions}
       programCategories={programCategories}
+      tahunSekarang={getWibYearMonth(now.getTime()).tahun}
 
       wajibLaporData={serialize(wajibRows)}
       wajibPage={wajibPage}

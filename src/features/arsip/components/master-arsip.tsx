@@ -9,6 +9,8 @@ import { Icons } from "@/utils/formatters";
 import { deleteLaporan, ingatkanPJ } from "@/features/arsip/actions";
 import { bukaAksesLapor, cabutAksesLapor } from "@/features/akses-lapor/actions";
 import { getReminderMode } from "@/utils/reportAccess";
+import { TAHUN_SEMUA } from "@/utils/arsipFilter";
+import type { GrupKegiatan } from "@/utils/arsipGrup";
 
 export interface ArsipItem {
   id: string;
@@ -41,8 +43,15 @@ export interface ArsipItem {
   aksesSampai?: string | null;
 }
 
+// Satu kegiatan beserta ringkasan dan seluruh baris periodenya (tampilan Per kegiatan).
+export type GrupArsip = GrupKegiatan<ArsipItem> & { tahunAnggaran: number };
+
 interface MasterArsipSMARTPageProps {
+  // Tampilan Daftar: baris kegiatan x periode. Kosong pada tampilan Per kegiatan.
   arsipList: ArsipItem[];
+  // Tampilan Per kegiatan: satu entri per kegiatan. Kosong pada tampilan Daftar.
+  grupList: GrupArsip[];
+  tampilan: "kegiatan" | "daftar";
   stats: {
     total: number;
     sudah: number;
@@ -54,11 +63,15 @@ interface MasterArsipSMARTPageProps {
     total: number;
     pageSize: number;
   };
-  periodOptions: { value: string; label: string }[];
+  bulanOptions: { value: string; label: string }[];
+  tahunOptions: { value: string; label: string }[];
+  // Tahun lain yang punya kegiatan; diisi hanya saat tabel kosong.
+  petunjukTahun: { tahun: number; jumlah: number }[];
   currentParams: {
     q: string;
-    periode: string;
+    bulan: string;
     status: string;
+    tahun: string;
   };
 }
 
@@ -76,9 +89,13 @@ function getPageNumbers(current: number, total: number): (number | "...")[] {
 
 export function MasterArsipSMARTPage({
   arsipList,
+  grupList,
+  tampilan,
   stats,
   pagination,
-  periodOptions,
+  bulanOptions,
+  tahunOptions,
+  petunjukTahun,
   currentParams,
 }: MasterArsipSMARTPageProps) {
   const router = useRouter();
@@ -86,6 +103,16 @@ export function MasterArsipSMARTPage({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
+  // Kegiatan yang dibuka/ditutup pengguna. Bawaan: tertutup, kecuali hanya ada satu
+  // kegiatan pada halaman (otomatis terbuka). Set ini berisi yang DIBALIK dari bawaan.
+  const [dibalik, setDibalik] = useState<Set<string>>(new Set());
+  const toggleGrup = (id: string) =>
+    setDibalik((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const [searchInput, setSearchInput] = useState(currentParams.q);
   const [remindingId, setRemindingId] = useState<string | null>(null);
 
@@ -104,6 +131,7 @@ export function MasterArsipSMARTPage({
 
   const updateQueryParams = (
     updates: Record<string, string | number | null>,
+    options?: { replace?: boolean },
   ) => {
     const params = new URLSearchParams(searchParams.toString());
     Object.entries(updates).forEach(([key, val]) => {
@@ -113,14 +141,20 @@ export function MasterArsipSMARTPage({
         params.set(key, String(val));
       }
     });
-    router.push(`${pathname}?${params.toString()}`);
+    const url = `${pathname}?${params.toString()}`;
+    if (options?.replace) router.replace(url);
+    else router.push(url);
   };
 
   // Debounced Search Input (300ms)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchInput !== currentParams.q) {
-        updateQueryParams({ q: searchInput.trim() || null, page: 1 });
+        // replace: setiap ketikan tidak menambah riwayat browser.
+        updateQueryParams(
+          { q: searchInput.trim() || null, page: 1 },
+          { replace: true },
+        );
       }
     }, 300);
     return () => clearTimeout(timer);
@@ -258,183 +292,9 @@ export function MasterArsipSMARTPage({
     toast.success(`Mengunduh berkas laporan ${item.kode}`);
   };
 
-  return (
-    <div className="space-y-5">
-      {/* ── Top Header ── */}
-      <div className="bg-white rounded-lg border border-slate-200/80 shadow-xs p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight">
-            Arsip
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Repositori terpusat berkas laporan realisasi yang diunggah
-            oleh seluruh PJ Kegiatan
-          </p>
-        </div>
-        <Link
-          href="/admin/log-audit"
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-md text-xs font-semibold shadow-xs transition cursor-pointer"
-        >
-          <svg
-            width={14}
-            height={14}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d={Icons.shield} />
-          </svg>
-          Lihat Log Audit Penghapusan
-        </Link>
-      </div>
-
-      {/* ── Stats Summary Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-white p-4 rounded-lg border border-slate-200/80 shadow-xs">
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-            TOTAL ARSIP
-          </p>
-          <p className="text-2xl font-black text-slate-800">{stats.total}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg border border-slate-200/80 shadow-xs">
-          <p className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider mb-1">
-            SUDAH TERUNGGAH
-          </p>
-          <p className="text-2xl font-black text-emerald-600">{stats.sudah}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg border border-slate-200/80 shadow-xs">
-          <p className="text-[11px] font-bold text-rose-700 uppercase tracking-wider mb-1">
-            BELUM DIUNGGAH
-          </p>
-          <p className="text-2xl font-black text-rose-600">{stats.belum}</p>
-        </div>
-      </div>
-
-      {/* ── Search & Filter Bar ── */}
-      <div className="bg-white rounded-lg border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative w-full sm:w-80">
-            <input
-              type="text"
-              placeholder="Cari kode, nama kegiatan, atau pengunggah..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 text-xs bg-white border border-slate-300 rounded-md text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-700"
-            />
-            <svg
-              width={14}
-              height={14}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            >
-              <path d={Icons.search} />
-            </svg>
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <select
-              value={currentParams.periode}
-              onChange={(e) =>
-                updateQueryParams({ periode: e.target.value, page: 1 })
-              }
-              className="h-8.5 px-3 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-800 cursor-pointer text-slate-700 font-medium"
-            >
-              <option value="ALL">Semua Periode</option>
-              {periodOptions.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={currentParams.status}
-              onChange={(e) =>
-                updateQueryParams({ status: e.target.value, page: 1 })
-              }
-              className="h-8.5 px-3 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-800 cursor-pointer text-slate-700 font-medium"
-            >
-              <option value="ALL">Semua Status</option>
-              <option value="SUDAH_UPLOAD">Sudah Upload</option>
-              <option value="BELUM_UPLOAD">Belum Upload</option>
-            </select>
-          </div>
-        </div>
-
-        {/* ── Table Matching Screenshot ── */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                <th className="py-3 px-4 w-12 text-center">NO</th>
-                <th className="py-3 px-4">KODE & KEGIATAN</th>
-                <th className="py-3 px-4">PERIODE</th>
-                <th className="py-3 px-4">JENIS</th>
-                <th className="py-3 px-4">PENGUNGGAH (PJ)</th>
-                <th className="py-3 px-4">WAKTU UPLOAD</th>
-                <th className="py-3 px-4 text-center">STATUS</th>
-                <th className="py-3 px-4 text-center">AKSI</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-              {arsipList.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-400">
-                    Tidak ada data arsip yang sesuai kriteria pencarian.
-                  </td>
-                </tr>
-              ) : (
-                arsipList.map((item, idx) => (
-                  <tr key={item.id} className="hover:bg-slate-50/60 transition">
-                    <td className="py-3 px-4 text-slate-400 font-semibold text-center">
-                      {(pagination.page - 1) * pagination.pageSize + idx + 1}
-                    </td>
-                    <td className="py-3 px-4 max-w-[280px]">
-                      <span className="font-mono font-bold text-emerald-800 text-[11px] block">
-                        {item.kode}
-                      </span>
-                      <span
-                        className="font-medium text-slate-900 block truncate"
-                        title={item.nama}
-                      >
-                        {item.nama}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 whitespace-nowrap text-slate-700 font-medium">
-                      {item.periode}
-                    </td>
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${
-                          item.jenis === "APBN"
-                            ? "bg-sky-50 text-sky-800 border-sky-200"
-                            : "bg-amber-50 text-amber-800 border-amber-200"
-                        }`}
-                      >
-                        {item.jenis}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <div className="font-semibold text-slate-800">
-                        {item.pjNama}
-                      </div>
-                      <div className="text-[11px] text-slate-400">
-                        {item.pjEmail}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 whitespace-nowrap text-slate-600">
-                      {item.waktuUpload}
-                      {item.waktuRevisi && (
-                        <div className="mt-0.5 text-[10.5px] font-semibold text-amber-700">
-                          Direvisi {item.waktuRevisi}
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-center whitespace-nowrap">
+  // Sel Status dan Aksi dipakai bersama oleh tampilan Daftar dan Per kegiatan.
+  const renderStatus = (item: ArsipItem) => (
+    <>
                       {item.status === "SUDAH_UPLOAD" ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10.5px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                           Sudah Upload
@@ -444,8 +304,11 @@ export function MasterArsipSMARTPage({
                           Belum Upload
                         </span>
                       )}
-                    </td>
-                    <td className="py-3 px-4 text-center whitespace-nowrap">
+    </>
+  );
+
+  const renderAksi = (item: ArsipItem) => (
+    <>
                       {item.status === "SUDAH_UPLOAD" ? (
                         <div className="flex items-center justify-center gap-1.5">
                           <button
@@ -544,6 +407,398 @@ export function MasterArsipSMARTPage({
                           </button>
                         </div>
                       ) : null}
+    </>
+  );
+
+  // Isi tampilan kosong (termasuk petunjuk tahun), dipakai kedua tampilan.
+  const kontenKosong = (
+    <>
+                    Tidak ada data arsip yang sesuai kriteria pencarian.
+                    {petunjukTahun.length > 0 && (
+                      <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-slate-500">
+                        <span>
+                          {currentParams.q
+                            ? "Hasil pencarian ada di tahun:"
+                            : "Kegiatan tersedia di tahun:"}
+                        </span>
+                        {petunjukTahun.map((p) => (
+                          <button
+                            key={p.tahun}
+                            type="button"
+                            onClick={() =>
+                              updateQueryParams({
+                                tahun: String(p.tahun),
+                                bulan: null,
+                                page: 1,
+                              })
+                            }
+                            className="px-2.5 py-1 text-[11px] font-semibold rounded border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 cursor-pointer"
+                          >
+                            {p.tahun} ({p.jumlah} kegiatan)
+                          </button>
+                        ))}
+                      </div>
+                    )}
+    </>
+  );
+
+  return (
+    <div className="space-y-5">
+      {/* ── Top Header ── */}
+      <div className="bg-white rounded-lg border border-slate-200/80 shadow-xs p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight">
+            Arsip
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            Repositori terpusat berkas laporan realisasi yang diunggah
+            oleh seluruh PJ Kegiatan
+          </p>
+        </div>
+        <Link
+          href="/admin/log-audit"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-md text-xs font-semibold shadow-xs transition cursor-pointer"
+        >
+          <svg
+            width={14}
+            height={14}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d={Icons.shield} />
+          </svg>
+          Lihat Log Audit Penghapusan
+        </Link>
+      </div>
+
+      {/* ── Stats Summary Cards ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-white p-4 rounded-lg border border-slate-200/80 shadow-xs">
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+            TOTAL ARSIP
+          </p>
+          <p className="text-2xl font-black text-slate-800">{stats.total}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-slate-200/80 shadow-xs">
+          <p className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider mb-1">
+            SUDAH TERUNGGAH
+          </p>
+          <p className="text-2xl font-black text-emerald-600">{stats.sudah}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg border border-slate-200/80 shadow-xs">
+          <p className="text-[11px] font-bold text-rose-700 uppercase tracking-wider mb-1">
+            BELUM DIUNGGAH
+          </p>
+          <p className="text-2xl font-black text-rose-600">{stats.belum}</p>
+        </div>
+      </div>
+
+      {/* ── Search & Filter Bar ── */}
+      <div className="bg-white rounded-lg border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="relative w-full sm:w-80">
+            <input
+              type="text"
+              placeholder="Cari kode, nama kegiatan, atau pengunggah..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full pl-9 pr-4 py-1.5 text-xs bg-white border border-slate-300 rounded-md text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+            />
+            <svg
+              width={14}
+              height={14}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            >
+              <path d={Icons.search} />
+            </svg>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div
+              role="group"
+              aria-label="Tampilan"
+              className="inline-flex h-8.5 rounded-md border border-slate-300 overflow-hidden text-xs font-medium"
+            >
+              {(
+                [
+                  { nilai: "kegiatan", label: "Per kegiatan" },
+                  { nilai: "daftar", label: "Daftar" },
+                ] as const
+              ).map((opsi) => (
+                <button
+                  key={opsi.nilai}
+                  type="button"
+                  aria-pressed={tampilan === opsi.nilai}
+                  onClick={() =>
+                    updateQueryParams({
+                      tampilan: opsi.nilai === "kegiatan" ? null : opsi.nilai,
+                      page: 1,
+                    })
+                  }
+                  className={`px-3 cursor-pointer transition ${
+                    tampilan === opsi.nilai
+                      ? "bg-emerald-800 text-white"
+                      : "bg-white text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  {opsi.label}
+                </button>
+              ))}
+            </div>
+
+            <select
+              value={currentParams.tahun}
+              onChange={(e) =>
+                updateQueryParams({ tahun: e.target.value, bulan: null, page: 1 })
+              }
+              aria-label="Filter tahun"
+              className="h-8.5 px-3 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-800 cursor-pointer text-slate-700 font-medium"
+            >
+              {tahunOptions.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={currentParams.bulan}
+              onChange={(e) =>
+                updateQueryParams({ bulan: e.target.value, page: 1 })
+              }
+              disabled={currentParams.tahun === TAHUN_SEMUA}
+              title={
+                currentParams.tahun === TAHUN_SEMUA
+                  ? "Pilih tahun tertentu untuk memfilter bulan"
+                  : undefined
+              }
+              aria-label="Filter bulan"
+              className="h-8.5 px-3 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-800 cursor-pointer text-slate-700 font-medium disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+            >
+              <option value="ALL">Semua Bulan</option>
+              {bulanOptions.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={currentParams.status}
+              onChange={(e) =>
+                updateQueryParams({ status: e.target.value, page: 1 })
+              }
+              className="h-8.5 px-3 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-800 cursor-pointer text-slate-700 font-medium"
+            >
+              <option value="ALL">Semua Status</option>
+              <option value="SUDAH_UPLOAD">Sudah Upload</option>
+              <option value="BELUM_UPLOAD">Belum Upload</option>
+            </select>
+          </div>
+        </div>
+
+        {tampilan === "kegiatan" ? (
+          <div className="divide-y divide-slate-100 text-xs text-slate-700">
+            {grupList.length === 0 ? (
+              <div className="py-8 text-center text-slate-400">{kontenKosong}</div>
+            ) : (
+              grupList.map((g) => {
+                const terbuka =
+                  grupList.length === 1
+                    ? !dibalik.has(g.kegiatanId)
+                    : dibalik.has(g.kegiatanId);
+                const r = g.ringkasan;
+                return (
+                  <div key={g.kegiatanId}>
+                    <button
+                      type="button"
+                      onClick={() => toggleGrup(g.kegiatanId)}
+                      aria-expanded={terbuka}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50/60 transition cursor-pointer"
+                    >
+                      <svg
+                        width={14}
+                        height={14}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        className={`shrink-0 text-slate-400 transition-transform ${terbuka ? "rotate-90" : ""}`}
+                        aria-hidden="true"
+                      >
+                        <path d="M9 6l6 6-6 6" />
+                      </svg>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-emerald-800 text-[11px]">
+                            {g.kode}
+                          </span>
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${
+                              g.jenis === "APBN"
+                                ? "bg-sky-50 text-sky-800 border-sky-200"
+                                : "bg-amber-50 text-amber-800 border-amber-200"
+                            }`}
+                          >
+                            {g.jenis}
+                          </span>
+                        </div>
+                        <div
+                          className="font-medium text-slate-900 truncate"
+                          title={g.nama}
+                        >
+                          {g.nama}
+                        </div>
+                        <div className="text-[11px] text-slate-400 truncate">
+                          {g.pjNama} · {g.pjEmail} · TA {g.tahunAnggaran}
+                        </div>
+                      </div>
+                      <span className="whitespace-nowrap font-medium text-slate-600">
+                        {r.sudah} dari {r.total} terlapor
+                      </span>
+                      <span className="w-28 text-right">
+                        {g.diblokir ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            Diblokir
+                          </span>
+                        ) : r.terlambat > 0 ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            {r.terlambat} terlambat
+                          </span>
+                        ) : r.belum > 0 ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10.5px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                            {r.belum} belum upload
+                          </span>
+                        ) : r.total > 0 ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10.5px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Lengkap
+                          </span>
+                        ) : null}
+                      </span>
+                    </button>
+
+                    {terbuka && (
+                      <div className="bg-slate-50/60 border-t border-slate-100 px-4 pb-3 overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">
+                              <th className="py-2 pr-4">PERIODE</th>
+                              <th className="py-2 pr-4">WAKTU UPLOAD</th>
+                              <th className="py-2 px-4 text-center">STATUS</th>
+                              <th className="py-2 pl-4 text-center">AKSI</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {g.rows.map((item) => (
+                              <tr key={item.id}>
+                                <td className="py-2.5 pr-4 whitespace-nowrap font-medium text-slate-700">
+                                  {item.periode}
+                                </td>
+                                <td className="py-2.5 pr-4 whitespace-nowrap text-slate-600">
+                                  {item.waktuUpload}
+                                  {item.waktuRevisi && (
+                                    <div className="mt-0.5 text-[10.5px] font-semibold text-amber-700">
+                                      Direvisi {item.waktuRevisi}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-2.5 px-4 text-center whitespace-nowrap">
+                                  {renderStatus(item)}
+                                </td>
+                                <td className="py-2.5 pl-4 text-center whitespace-nowrap">
+                                  {renderAksi(item)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                <th className="py-3 px-4 w-12 text-center">NO</th>
+                <th className="py-3 px-4">KODE & KEGIATAN</th>
+                <th className="py-3 px-4">PERIODE</th>
+                <th className="py-3 px-4">JENIS</th>
+                <th className="py-3 px-4">PENGUNGGAH (PJ)</th>
+                <th className="py-3 px-4">WAKTU UPLOAD</th>
+                <th className="py-3 px-4 text-center">STATUS</th>
+                <th className="py-3 px-4 text-center">AKSI</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+              {arsipList.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-8 text-center text-slate-400">
+                    {kontenKosong}
+                  </td>
+                </tr>
+              ) : (
+                arsipList.map((item, idx) => (
+                  <tr key={item.id} className="hover:bg-slate-50/60 transition">
+                    <td className="py-3 px-4 text-slate-400 font-semibold text-center">
+                      {(pagination.page - 1) * pagination.pageSize + idx + 1}
+                    </td>
+                    <td className="py-3 px-4 max-w-[280px]">
+                      <span className="font-mono font-bold text-emerald-800 text-[11px] block">
+                        {item.kode}
+                      </span>
+                      <span
+                        className="font-medium text-slate-900 block truncate"
+                        title={item.nama}
+                      >
+                        {item.nama}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap text-slate-700 font-medium">
+                      {item.periode}
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${
+                          item.jenis === "APBN"
+                            ? "bg-sky-50 text-sky-800 border-sky-200"
+                            : "bg-amber-50 text-amber-800 border-amber-200"
+                        }`}
+                      >
+                        {item.jenis}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      <div className="font-semibold text-slate-800">
+                        {item.pjNama}
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        {item.pjEmail}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap text-slate-600">
+                      {item.waktuUpload}
+                      {item.waktuRevisi && (
+                        <div className="mt-0.5 text-[10.5px] font-semibold text-amber-700">
+                          Direvisi {item.waktuRevisi}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-center whitespace-nowrap">
+                      {renderStatus(item)}
+                    </td>
+                    <td className="py-3 px-4 text-center whitespace-nowrap">
+                      {renderAksi(item)}
                     </td>
                   </tr>
                 ))
@@ -551,13 +806,17 @@ export function MasterArsipSMARTPage({
             </tbody>
           </table>
         </div>
+        )}
 
         {/* ── Pagination ── */}
         <div className="p-3.5 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 bg-slate-50/50">
           <span>
-            Menampilkan <b className="text-slate-800">{arsipList.length}</b>{" "}
-            dari <b className="text-slate-800">{pagination.total}</b> total
-            berkas
+            Menampilkan{" "}
+            <b className="text-slate-800">
+              {tampilan === "kegiatan" ? grupList.length : arsipList.length}
+            </b>{" "}
+            dari <b className="text-slate-800">{pagination.total}</b> total{" "}
+            {tampilan === "kegiatan" ? "kegiatan" : "berkas"}
           </span>
 
           {pagination.totalPages > 1 && (

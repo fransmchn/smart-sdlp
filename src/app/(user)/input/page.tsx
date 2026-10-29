@@ -94,6 +94,7 @@ export default async function Page({
       k.statusAnggaran === "DIBLOKIR"
         ? ("Diblokir" as const)
         : ("Dibuka" as const),
+    tahunAnggaran: k.tahunAnggaran,
     uraian: k.uraian ?? "",
     fisik: k.fisik ?? 0,
     realLalu: k.realLalu !== null ? Number(k.realLalu) : 0,

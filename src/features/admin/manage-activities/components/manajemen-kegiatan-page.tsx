@@ -19,6 +19,7 @@ import {
   updateKegiatan,
 } from "@/features/kegiatan/actions";
 import { fmtRupiah, Icons } from "@/utils/formatters";
+import { daftarTahunAnggaran } from "@/utils/tahunAnggaran";
 import {
   PROGRAM_COLORS,
   resolveCategoryColor,
@@ -42,6 +43,7 @@ type KegiatanFromDb = {
   fisik: number | null;
   uraian: string | null;
   statusAnggaran: "DIBUKA" | "DIBLOKIR";
+  tahunAnggaran: number;
   realLalu: number | null;
   realIni: number | null;
   wajib: boolean;
@@ -62,6 +64,8 @@ interface ManajemenKegiatanPageProps {
   order: "asc" | "desc";
   pjOptions: PjOption[];
   programCategories: ProgramCategoryOption[];
+  // Tahun berjalan (WIB), dikirim dari server agar render klien tetap murni.
+  tahunSekarang: number;
   wajibLaporData: KegiatanFromDb[];
   wajibPage: number;
   wajibPageSize: number;
@@ -139,6 +143,7 @@ export function ManajemenKegiatanPage({
   order,
   pjOptions,
   programCategories,
+  tahunSekarang,
   wajibLaporData,
 
   sudahLaporCount,
@@ -202,6 +207,9 @@ export function ManajemenKegiatanPage({
   const [formStatusAnggaran, setFormStatusAnggaran] = useState<
     "DIBUKA" | "DIBLOKIR"
   >("DIBUKA");
+  const [formTahunAnggaran, setFormTahunAnggaran] = useState(
+    String(tahunSekarang),
+  );
   const [formCategoryId, setFormCategoryId] = useState<string>("");
   const [categoryList, setCategoryList] = useState(programCategories);
   const [formError, setFormError] = useState<string | null>(null);
@@ -285,6 +293,7 @@ export function ManajemenKegiatanPage({
     setFormJenis("APBN");
     setFormPagu("450000000");
     setFormStatusAnggaran("DIBUKA");
+    setFormTahunAnggaran(String(tahunSekarang));
     setFormCategoryId("");
     setModalOpen(true);
   };
@@ -298,6 +307,7 @@ export function ManajemenKegiatanPage({
     setFormJenis(k.jenis === "NON_APBN" ? "NON_APBN" : "APBN");
     setFormPagu(String(k.pagu));
     setFormStatusAnggaran(k.statusAnggaran);
+    setFormTahunAnggaran(String(k.tahunAnggaran));
     setFormCategoryId(k.programCategoryId ?? "");
     setModalOpen(true);
   };
@@ -323,6 +333,7 @@ export function ManajemenKegiatanPage({
             pagu: Number(formPagu),
             pjId: formPjId || undefined,
             statusAnggaran: formStatusAnggaran,
+            tahunAnggaran: Number(formTahunAnggaran),
           })
         : await createKegiatan({
             kode: formKode,
@@ -332,6 +343,7 @@ export function ManajemenKegiatanPage({
             pagu: Number(formPagu),
             pjId: formPjId || undefined,
             statusAnggaran: formStatusAnggaran,
+            tahunAnggaran: Number(formTahunAnggaran),
           });
 
       if (!result.success) {
@@ -525,6 +537,7 @@ export function ManajemenKegiatanPage({
                       />
                       <th className="py-2.5 px-3 min-w-45">Program Utama</th>
                       <th className="py-2.5 px-3">Jenis</th>
+                      <th className="py-2.5 px-3 text-center">TA</th>
                       <th className="py-2.5 px-3 text-center">
                         Status Anggaran
                       </th>
@@ -544,7 +557,7 @@ export function ManajemenKegiatanPage({
                     {data.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={9}
+                          colSpan={10}
                           className="py-8 text-center text-slate-400"
                         >
                           Tidak ada data kegiatan yang cocok dengan kriteria
@@ -593,6 +606,9 @@ export function ManajemenKegiatanPage({
                                 text={k.jenis}
                                 color={k.jenis === "APBN" ? "blue" : "gold"}
                               />
+                            </td>
+                            <td className="py-2.5 px-3 text-center font-mono font-semibold text-slate-700 whitespace-nowrap">
+                              {k.tahunAnggaran}
                             </td>
                             <td className="py-2.5 px-3 text-center whitespace-nowrap">
                               <button
@@ -1011,6 +1027,30 @@ export function ManajemenKegiatanPage({
                       <option value="NON_APBN">NON_APBN</option>
                     </select>
                   </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="activity-tahun" className="block font-semibold text-slate-700">
+                    Tahun Anggaran
+                  </label>
+                  <select
+                    id="activity-tahun"
+                    value={formTahunAnggaran}
+                    onChange={(e) => setFormTahunAnggaran(e.target.value)}
+                    className="w-full h-9 px-2 text-xs bg-white border border-slate-300 rounded-md"
+                  >
+                    {daftarTahunAnggaran(
+                      tahunSekarang,
+                      Number(formTahunAnggaran),
+                    ).map((tahun) => (
+                      <option key={tahun} value={tahun}>
+                        {tahun}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Laporan kegiatan ini hanya dapat dibuat untuk periode di tahun ini.
+                  </p>
                 </div>
 
                 <div className="space-y-1">

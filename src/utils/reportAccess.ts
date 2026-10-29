@@ -62,7 +62,7 @@ export function computeAccessOpenedUntil(
   return new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
-const NAMA_BULAN = [
+export const NAMA_BULAN = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];

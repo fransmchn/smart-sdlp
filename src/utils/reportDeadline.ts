@@ -1,5 +1,5 @@
 export const REPORT_TIME_ZONE = "Asia/Jakarta";
-const JAKARTA_OFFSET_MS = 7 * 60 * 60 * 1000;
+export const JAKARTA_OFFSET_MS = 7 * 60 * 60 * 1000;
 
 export type ReportDeadlineSettings = {
   day: number;
