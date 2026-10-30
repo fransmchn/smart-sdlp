@@ -3,144 +3,166 @@ import { AdminDashboard } from "@/components/admin-dashboard";
 import type { Activity } from "@/types";
 import { aggregateActivityReports } from "@/utils/reportAggregation";
 import { getMyNotifications } from "@/features/notifications/actions";
+import { getReportDeadline } from "@/features/app-settings/actions";
+import { daftarTahunFilter, hitungPetunjukTahun } from "@/utils/arsipFilter";
+import {
+  bangunBarData,
+  bangunLineData,
+  opsiBulanDashboard,
+  statusKepatuhan,
+  tentukanPeriodeDashboard,
+} from "@/utils/dashboardAdmin";
+import { bangunRekapTahunan } from "@/utils/rekapTahunan";
+import { isReportDeadlinePassed } from "@/utils/reportDeadline";
+import { getWibYearMonth } from "@/utils/tahunAnggaran";
 
-const NAMA_BULAN_SINGKAT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "Mei",
-  "Jun",
-  "Jul",
-  "Agu",
-  "Sep",
-  "Okt",
-  "Nov",
-  "Des",
-];
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ tahun?: string; bulan?: string }>;
+}) {
+  const params = await searchParams;
 
-export default async function Page() {
-  const [kegiatanRows, laporanRows, categories, notifications] = await Promise.all([
-    prisma.kegiatan.findMany({
-      include: {
-        pj: { select: { id: true, name: true, email: true } },
-        programCategoryRef: {
-                select: {
-                  id: true,
-                  name: true,
-                  sortOrder: true,
-                  colorKey: true,
-                  isActive: true,
-                },
-              },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.laporan.findMany({
-      include: {
-        kegiatan: {
-          select: {
-            jenis: true,
-programCategoryRef: {
-          select: {
-            id: true,
-            name: true,
-            sortOrder: true,
-            colorKey: true,
-            isActive: true,
+  const [kegiatanRows, laporanRows, categories, notifications, deadlineSettings] =
+    await Promise.all([
+      prisma.kegiatan.findMany({
+        include: {
+          pj: { select: { id: true, name: true, email: true } },
+          programCategoryRef: {
+            select: {
+              id: true,
+              name: true,
+              sortOrder: true,
+              colorKey: true,
+              isActive: true,
+            },
           },
         },
-          },
-        },
-      },
-      orderBy: [{ periodeTahun: "asc" }, { periodeBulan: "asc" }],
-    }),
-    prisma.programCategory.findMany({
-      orderBy: { sortOrder: "asc" },
-      select: { name: true, sortOrder: true, colorKey: true, isActive: true },
-    }),
-     getMyNotifications(),
-   ]);
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.laporan.findMany({
+        orderBy: [{ periodeTahun: "asc" }, { periodeBulan: "asc" }],
+      }),
+      prisma.programCategory.findMany({
+        orderBy: { sortOrder: "asc" },
+        select: { name: true, sortOrder: true, colorKey: true, isActive: true },
+      }),
+      getMyNotifications(),
+      getReportDeadline(),
+    ]);
 
-   const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-  const period = { month: currentMonth, year: currentYear };
-  const aggregates = aggregateActivityReports(kegiatanRows.map((k) => ({ id: k.id, pagu: Number(k.pagu) })), laporanRows.map((l) => ({ ...l, realIni: Number(l.realIni) })), period);
-  const activities: Activity[] = kegiatanRows.map((k) => ({
-    id: k.id,
-    kode: k.kode,
-    nama: k.nama,
-     jenis: k.jenis || "APBN",
-    programCategory: k.programCategoryRef?.id
-      ? k.programCategoryRef.name
-      : k.programCategory ?? undefined,
-    pagu: Number(k.pagu),
-    realisasi: aggregates.get(k.id)?.sdPeriode ?? 0,
-    fisik: k.fisik ?? 0,
-    uraian: k.uraian ?? undefined,
-    statusAnggaran: k.statusAnggaran === "DIBLOKIR" ? "Diblokir" : "Dibuka",
-    realLalu: aggregates.get(k.id)?.realLalu ?? 0,
-    realIni: aggregates.get(k.id)?.realIni ?? 0,
-    pj: k.pj?.name,
-    email: k.pj?.email,
-    wajib: k.wajib,
-    sudahLapor: aggregates.get(k.id)?.sudahLaporPeriode ?? false,
-    status: aggregates.get(k.id)?.sudahLaporPeriode ? "done" : "pending",
-  }));
+  // Periode yang dilihat: tahun anggaran + "posisi per bulan". Bawaan: tahun dan
+  // bulan berjalan menurut WIB.
+  const now = new Date();
+  const nowMs = now.getTime();
+  const periode = tentukanPeriodeDashboard(params.tahun, params.bulan, nowMs);
+  const periodeBulanTahun = { bulan: periode.bulan, tahun: periode.tahun };
 
-  // Bar chart: persentase realisasi terhadap pagu jenis anggaran per bulan.
-  const totalPaguApbn = activities
-    .filter((activity) => activity.jenis === "APBN")
-    .reduce((sum, activity) => sum + activity.pagu, 0);
-  const totalPaguNonApbn = activities
-    .filter((activity) => activity.jenis !== "APBN")
-    .reduce((sum, activity) => sum + activity.pagu, 0);
-  const barData = Array.from({ length: currentMonth }, (_, i) => {
-    const bulan = i + 1;
-    const laporanBulanIni = laporanRows.filter(
-      (l) => l.periodeBulan === bulan && l.periodeTahun === currentYear,
-    );
-    const apbn_real = laporanBulanIni
-      .filter((l) => (l.kegiatan.jenis || "APBN") === "APBN")
-      .reduce((sum, l) => sum + Number(l.realIni), 0);
-    const non_real = laporanBulanIni
-      .filter((l) => (l.kegiatan.jenis || "APBN") !== "APBN")
-      .reduce((sum, l) => sum + Number(l.realIni), 0);
+  // Seluruh angka dihitung hanya untuk kegiatan pada tahun anggaran terpilih,
+  // supaya pagu, realisasi, dan kepatuhan antar tahun tidak bercampur.
+  const kegiatanTahun = kegiatanRows.filter(
+    (k) => k.tahunAnggaran === periode.tahun,
+  );
+  const idsTahun = new Set(kegiatanTahun.map((k) => k.id));
+  const laporanTahun = laporanRows.filter((l) => idsTahun.has(l.kegiatanId));
+
+  const aggregates = aggregateActivityReports(
+    kegiatanTahun.map((k) => ({ id: k.id, pagu: Number(k.pagu) })),
+    laporanTahun.map((l) => ({ ...l, realIni: Number(l.realIni) })),
+    { month: periode.bulan, year: periode.tahun },
+  );
+
+  const activities: Activity[] = kegiatanTahun.map((k) => {
+    const agg = aggregates.get(k.id);
+    const sudahLapor = agg?.sudahLaporPeriode ?? false;
     return {
-       name: NAMA_BULAN_SINGKAT[i],
-       apbn_real,
-       non_real,
-       apbn_pct: totalPaguApbn > 0 ? (apbn_real / totalPaguApbn) * 100 : 0,
-       non_pct: totalPaguNonApbn > 0 ? (non_real / totalPaguNonApbn) * 100 : 0,
-     };
+      id: k.id,
+      kode: k.kode,
+      nama: k.nama,
+      jenis: k.jenis || "APBN",
+      programCategory: k.programCategoryRef?.id
+        ? k.programCategoryRef.name
+        : (k.programCategory ?? undefined),
+      pagu: Number(k.pagu),
+      realisasi: agg?.sdPeriode ?? 0,
+      fisik: k.fisik ?? 0,
+      uraian: k.uraian ?? undefined,
+      statusAnggaran: k.statusAnggaran === "DIBLOKIR" ? "Diblokir" : "Dibuka",
+      realLalu: agg?.realLalu ?? 0,
+      realIni: agg?.realIni ?? 0,
+      pj: k.pj?.name,
+      email: k.pj?.email,
+      wajib: k.wajib,
+      sudahLapor,
+      status: sudahLapor ? "done" : "pending",
+      kepatuhan: statusKepatuhan({
+        diblokir: k.statusAnggaran === "DIBLOKIR",
+        sudahLapor,
+        periode: periodeBulanTahun,
+        nowMs,
+      }),
+    };
   });
 
-  // Kurva-S: realisasi kumulatif (%) vs target LINEAR (asumsi — belum ada
-  // data rencana pencairan bulanan resmi/RKAKL di schema kita saat ini).
-  const totalPagu = activities.reduce((sum, a) => sum + a.pagu, 0);
-  let runningTotal = 0;
-  const lineDataFull = Array.from({ length: 12 }, (_, i) => {
-    const bulanKe = i + 1;
-    const target = Number(((bulanKe / 12) * 100).toFixed(1));
+  // Grafik batang dan Kurva-S: Januari sampai bulan acuan, hanya kegiatan tahun itu.
+  // Kurva-S memakai target LINEAR (asumsi, belum ada data rencana pencairan
+  // bulanan resmi/RKAKL di schema).
+  const bulanSampai = periode.belumDimulai ? 0 : periode.bulan;
+  const grafikKegiatan = kegiatanTahun.map((k) => ({
+    id: k.id,
+    jenis: k.jenis,
+    pagu: Number(k.pagu),
+  }));
+  const grafikLaporan = laporanTahun.map((l) => ({
+    kegiatanId: l.kegiatanId,
+    periodeBulan: l.periodeBulan,
+    periodeTahun: l.periodeTahun,
+    realIni: Number(l.realIni),
+  }));
+  const barData = bangunBarData(grafikKegiatan, grafikLaporan, periode.tahun, bulanSampai);
+  const lineDataFull = bangunLineData(grafikKegiatan, grafikLaporan, periode.tahun, bulanSampai);
 
-    if (bulanKe > currentMonth) {
-      return { name: NAMA_BULAN_SINGKAT[i], target, nilaiRealisasi: undefined };
-    }
-
-    const laporanBulanIni = laporanRows.filter(
-      (l) => l.periodeBulan === bulanKe && l.periodeTahun === currentYear,
-    );
-    // eslint-disable-next-line react-hooks/immutability
-    runningTotal += laporanBulanIni.reduce(
-      (sum, l) => sum + Number(l.realIni),
-      0,
-    );
-    const nilaiRealisasi =
-      totalPagu > 0 ? Number(((runningTotal / totalPagu) * 100).toFixed(1)) : 0;
-
-    return { name: NAMA_BULAN_SINGKAT[i], target, nilaiRealisasi };
+  // Rekap tahunan: matriks kegiatan x 12 bulan untuk tahun terpilih, per bulan acuan.
+  const rekap = bangunRekapTahunan({
+    kegiatan: kegiatanTahun
+      .map((k) => ({
+        id: k.id,
+        kode: k.kode,
+        nama: k.nama,
+        jenis: k.jenis || "APBN",
+        pagu: Number(k.pagu),
+        wajib: k.wajib,
+        diblokir: k.statusAnggaran === "DIBLOKIR",
+      }))
+      .sort((a, b) => a.kode.localeCompare(b.kode)),
+    laporan: grafikLaporan,
+    tahun: periode.tahun,
+    bulanAcuan: bulanSampai,
+    nowMs,
+    deadlineLewat: (bulan, tahun) =>
+      isReportDeadlinePassed(tahun, bulan, deadlineSettings, now),
   });
+
+  const tahunOptions = daftarTahunFilter(
+    kegiatanRows.map((k) => k.tahunAnggaran),
+    laporanRows.map((l) => l.periodeTahun),
+    getWibYearMonth(nowMs).tahun,
+  );
+  // Bila tahun yang dilihat kosong, beri tahu tahun lain yang punya kegiatan.
+  const petunjukTahun =
+    activities.length === 0
+      ? hitungPetunjukTahun(
+          kegiatanRows.map((k) => ({
+            tahunAnggaran: k.tahunAnggaran,
+            kode: k.kode,
+            nama: k.nama,
+            pjNama: "",
+            pjEmail: "",
+          })),
+          "",
+          { semua: false, tahun: periode.tahun },
+        )
+      : [];
 
   const metrics = Object.fromEntries(aggregates.entries());
 
@@ -148,18 +170,18 @@ programCategoryRef: {
     <AdminDashboard
       activities={activities}
       metrics={metrics}
-      categories={categories.filter((category) => category.isActive).map(({ name, colorKey }) => ({ name, colorKey }))}
+      categories={categories
+        .filter((category) => category.isActive)
+        .map(({ name, colorKey }) => ({ name, colorKey }))}
       barData={barData}
       lineDataFull={lineDataFull}
-       notifications={notifications.items}
-       reportPeriod={{ month: currentMonth, year: currentYear }}
-     />
+      notifications={notifications.items}
+      reportPeriod={{ month: periode.bulan, year: periode.tahun }}
+      tahunOptions={tahunOptions}
+      bulanOptions={opsiBulanDashboard(periode.tahun, nowMs)}
+      belumDimulai={periode.belumDimulai}
+      petunjukTahun={petunjukTahun}
+      rekap={rekap}
+    />
   );
 }
-
-
-
-
-
-
-

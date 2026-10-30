@@ -19,9 +19,16 @@ import {
   CartesianGrid,
 } from "recharts";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import NotificationsWithActions, { type NotificationItem } from "@/components/ui/notifications-with-actions";
 import { ingatkanPJ } from "@/features/arsip/actions";
 import { showToast } from "@/components/ui/app-toast";
+import { hitungKepatuhan } from "@/utils/dashboardAdmin";
+import { NAMA_BULAN } from "@/utils/reportAccess";
+import { formatJuta, type RekapTahunan, type SelRekap } from "@/utils/rekapTahunan";
+import { pesanTahunAnggaranBelumDimulai } from "@/utils/tahunAnggaran";
+
+type TabId = "serapan" | "trend" | "kegiatan" | "rekap";
 
 interface BarDataPoint {
   name: string;
@@ -45,6 +52,47 @@ interface AdminDashboardProps {
   lineDataFull: LineDataPoint[];
   notifications: NotificationItem[];
   reportPeriod: { month: number; year: number };
+  tahunOptions: number[];
+  bulanOptions: { value: string; label: string }[];
+  // Tahun anggaran yang dilihat belum dimulai (belum ada bulan yang berjalan).
+  belumDimulai: boolean;
+  // Tahun lain yang punya kegiatan; diisi hanya bila tahun yang dilihat kosong.
+  petunjukTahun: { tahun: number; jumlah: number }[];
+  rekap: RekapTahunan;
+}
+
+function simbolSel(sel: SelRekap): string {
+  switch (sel.status) {
+    case "sudah": return "✓";
+    case "belum": return sel.terlambat ? "!" : "○";
+    case "diblokir": return "–";
+    default: return "·";
+  }
+}
+
+function kelasSel(sel: SelRekap): string {
+  switch (sel.status) {
+    case "sudah": return "bg-emerald-50 text-emerald-800 hover:bg-emerald-100";
+    case "belum":
+      return sel.terlambat
+        ? "bg-rose-50 text-rose-700 hover:bg-rose-100"
+        : "bg-amber-50 text-amber-800 hover:bg-amber-100";
+    case "diblokir": return "bg-slate-100 text-slate-500 hover:bg-slate-200";
+    default: return "border border-dashed border-slate-200 text-slate-300 hover:bg-slate-50";
+  }
+}
+
+function teksStatusSel(sel: SelRekap): string {
+  switch (sel.status) {
+    case "sudah": return "sudah lapor";
+    case "belum":
+      return sel.terlambat
+        ? "belum lapor, batas waktu sudah lewat"
+        : "belum lapor, batas waktu belum lewat";
+    case "diblokir": return "kegiatan diblokir, bukan kewajiban lapor";
+    case "tidak-wajib": return "kegiatan tidak ditetapkan wajib lapor";
+    default: return "belum berjalan pada posisi ini";
+  }
 }
 
 export function AdminDashboard({
@@ -55,10 +103,29 @@ export function AdminDashboard({
   lineDataFull,
   notifications,
   reportPeriod,
+  tahunOptions,
+  bulanOptions,
+  belumDimulai,
+  petunjukTahun,
+  rekap,
 }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"serapan" | "trend" | "kegiatan">(
-    "serapan",
-  );
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const ubahPeriode = (updates: Record<string, string | null>) => {
+    const next = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === null || value === "") next.delete(key);
+      else next.set(key, value);
+    }
+    const query = next.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  };
+
+  const [activeTab, setActiveTab] = useState<TabId>("serapan");
+  // Rekap tahunan: isi sel (status laporan atau nominal) dan sel yang sedang dilihat.
+  const [isiSel, setIsiSel] = useState<"status" | "realisasi">("status");
+  const [selDipilih, setSelDipilih] = useState<{ id: string; bulan: number } | null>(null);
   const [search, setSearch] = useState("");
   const [filterJenis, setFilterJenis] = useState<"ALL" | "APBN" | "NON-APBN">(
     "ALL",
@@ -68,18 +135,23 @@ export function AdminDashboard({
 
   const totalPagu = activities.reduce((a, b) => a + b.pagu, 0);
   const totalReal = activities.reduce((sum, activity) => sum + (metrics[activity.id]?.sdPeriode ?? 0), 0);
-  const totalWajib = activities.filter(
-    (a) => a.wajib,
-  ).length;
-  const sudahLapor = activities.filter(
-    (a) => a.wajib && a.sudahLapor,
-  ).length;
-  const belumLapor = totalWajib - sudahLapor;
+  // Kewajiban lapor: hanya kegiatan wajib yang sedang bisa melapor pada periode ini
+  // (tidak diblokir, periodenya sudah berjalan).
+  const {
+    totalWajib,
+    sudah: sudahLapor,
+    belum: belumLapor,
+  } = hitungKepatuhan(
+    activities.map((a) => ({
+      wajib: !!a.wajib,
+      kepatuhan: a.kepatuhan ?? (a.sudahLapor ? "sudah" : "belum"),
+    })),
+  );
   const persenSerapan = totalPagu > 0 ? (totalReal / totalPagu) * 100 : 0;
   const sisaAnggaran = totalPagu - totalReal;
 
   const handleSendReminder = (item: Activity) => {
-    if (!item.pj || item.sudahLapor) return;
+    if (!item.pj || item.kepatuhan !== "belum") return;
     setRemindingId(item.id);
     startTransition(async () => {
       const result = await ingatkanPJ(item.id, reportPeriod.month, reportPeriod.year);
@@ -100,14 +172,14 @@ export function AdminDashboard({
     return matchSearch && matchJenis;
   });
 
-  const currentYear = new Date().getFullYear();
+  const tahunAnggaran = reportPeriod.year;
   const periodeLabel =
     barData.length > 0
-      ? `${barData[0].name} – ${barData[barData.length - 1].name} ${currentYear}`
+      ? `${barData[0].name} – ${barData[barData.length - 1].name} ${tahunAnggaran}`
       : "-";
   const posisiLabel =
     barData.length > 0
-      ? `Posisi per ${barData[barData.length - 1].name} ${currentYear}`
+      ? `Posisi per ${barData[barData.length - 1].name} ${tahunAnggaran}`
       : "-";
 
   const lastDataPoint = [...lineDataFull]
@@ -126,10 +198,39 @@ export function AdminDashboard({
           </h2>
           <p className="text-xs text-slate-500 mt-1">
             Balai Besar Perakitan dan Modernisasi Sumber Daya Lahan Pertanian ·
-            Tahun Anggaran {currentYear}
+            Tahun Anggaran {tahunAnggaran}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          <select
+            aria-label="Tahun anggaran"
+            value={String(reportPeriod.year)}
+            onChange={(e) => ubahPeriode({ tahun: e.target.value, bulan: null })}
+            className="h-8 px-2 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-800 cursor-pointer text-slate-700 font-medium"
+          >
+            {tahunOptions.map((tahun) => (
+              <option key={tahun} value={tahun}>
+                TA {tahun}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="Posisi per bulan"
+            value={String(reportPeriod.month)}
+            onChange={(e) => ubahPeriode({ bulan: e.target.value })}
+            disabled={belumDimulai || bulanOptions.length === 0}
+            className="h-8 px-2 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-800 cursor-pointer text-slate-700 font-medium disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+          >
+            {bulanOptions.length === 0 ? (
+              <option value={String(reportPeriod.month)}>Belum dimulai</option>
+            ) : (
+              bulanOptions.map((b) => (
+                <option key={b.value} value={b.value}>
+                  Posisi per {b.label}
+                </option>
+              ))
+            )}
+          </select>
           <NotificationsWithActions items={notifications} />
           <Link
             href="/admin/master"
@@ -166,6 +267,30 @@ export function AdminDashboard({
         </div>
       </div>
 
+      {belumDimulai && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+          {pesanTahunAnggaranBelumDimulai(tahunAnggaran)}
+        </div>
+      )}
+      {activities.length === 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+          <span>
+            Belum ada kegiatan untuk tahun anggaran {tahunAnggaran}.
+            {petunjukTahun.length > 0 ? " Kegiatan tersedia di tahun:" : ""}
+          </span>
+          {petunjukTahun.map((p) => (
+            <button
+              key={p.tahun}
+              type="button"
+              onClick={() => ubahPeriode({ tahun: String(p.tahun), bulan: null })}
+              className="px-2.5 py-1 text-[11px] font-semibold rounded border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 cursor-pointer"
+            >
+              {p.tahun} ({p.jumlah} kegiatan)
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label="Pagu Anggaran (DIPA)"
@@ -190,8 +315,14 @@ export function AdminDashboard({
         />
         <KpiCard
           label="Kepatuhan Laporan Kegiatan"
-          value={`${sudahLapor} / ${totalWajib} Kegiatan`}
-          sub={`${belumLapor} Kegiatan Belum Lapor`}
+          value={
+            belumDimulai ? "Belum dimulai" : `${sudahLapor} / ${totalWajib} Kegiatan`
+          }
+          sub={
+            belumDimulai
+              ? `Mulai Januari ${tahunAnggaran}`
+              : `${belumLapor} Kegiatan Belum Lapor`
+          }
           accent="#C0392B"
           icon={Icons.users}
         />
@@ -204,11 +335,12 @@ export function AdminDashboard({
               { id: "serapan", label: "Monitoring Serapan Anggaran" },
               { id: "trend", label: "Analisis Trend & Kurva-S" },
               { id: "kegiatan", label: "Daftar Kegiatan & Kepatuhan PJ" },
+              { id: "rekap", label: "Rekap Tahunan" },
             ].map((t) => (
               <button
                 key={t.id}
                 onClick={() =>
-                  setActiveTab(t.id as "serapan" | "trend" | "kegiatan")
+                  setActiveTab(t.id as TabId)
                 }
                 className={`whitespace-nowrap cursor-pointer transition-all duration-150 ${
                   activeTab === t.id
@@ -535,14 +667,20 @@ export function AdminDashboard({
                           <td className="py-2.5 px-3 min-w-[130px]">
                             <ProgressBar value={pct} color="#236437" />
                           </td><td className="py-2.5 px-3 text-center">
-                            <Badge
-                              text={
-                                item.sudahLapor ? "Sudah Lapor" : "Belum Lapor"
-                              }
-                              color={item.sudahLapor ? "green" : "red"}
-                            />
+                            {item.kepatuhan === "diblokir" ? (
+                              <Badge text="Diblokir" color="gray" />
+                            ) : item.kepatuhan === "belum-berjalan" ? (
+                              <Badge text="Belum dimulai" color="gray" />
+                            ) : (
+                              <Badge
+                                text={
+                                  item.sudahLapor ? "Sudah Lapor" : "Belum Lapor"
+                                }
+                                color={item.sudahLapor ? "green" : "red"}
+                              />
+                            )}
                           </td><td className="py-2.5 px-3 text-center">
-                             {!item.sudahLapor && item.pj ? (
+                             {item.kepatuhan === "belum" && item.pj ? (
                                <button
                                  type="button"
                                  onClick={() => handleSendReminder(item)}
@@ -566,6 +704,170 @@ export function AdminDashboard({
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+        {activeTab === "rekap" && (
+          <div className="p-4 sm:p-5 space-y-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="rounded-md bg-slate-50 px-3 py-2.5">
+                <div className="text-[11px] text-slate-500">Pagu TA {tahunAnggaran}</div>
+                <div className="text-base font-semibold text-slate-800">{fmtRupiah(rekap.ringkasan.pagu)}</div>
+                <div className="text-[11px] text-slate-500">{rekap.baris.length} kegiatan</div>
+              </div>
+              <div className="rounded-md bg-slate-50 px-3 py-2.5">
+                <div className="text-[11px] text-slate-500">Realisasi {belumDimulai ? "" : `s.d. ${NAMA_BULAN[reportPeriod.month - 1]}`}</div>
+                <div className="text-base font-semibold text-slate-800">{fmtRupiah(rekap.ringkasan.realisasi)}</div>
+                <div className="text-[11px] text-slate-500">
+                  Serapan {rekap.ringkasan.serapan.toFixed(1).replace(".", ",")}%, sisa {fmtRupiah(rekap.ringkasan.sisa)}
+                </div>
+              </div>
+              <div className="rounded-md bg-slate-50 px-3 py-2.5">
+                <div className="text-[11px] text-slate-500">Kepatuhan setahun</div>
+                <div className="text-base font-semibold text-slate-800">
+                  {rekap.ringkasan.persenKepatuhan === null
+                    ? "—"
+                    : `${rekap.ringkasan.terpenuhi} dari ${rekap.ringkasan.kewajiban}`}
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  {rekap.ringkasan.persenKepatuhan === null
+                    ? "belum ada kewajiban"
+                    : `${rekap.ringkasan.persenKepatuhan.toFixed(1).replace(".", ",")}% kewajiban bulanan terpenuhi`}
+                </div>
+              </div>
+              <div className="rounded-md bg-slate-50 px-3 py-2.5">
+                <div className="text-[11px] text-slate-500">Terlambat</div>
+                <div className={`text-base font-semibold ${rekap.ringkasan.terlambat > 0 ? "text-rose-700" : "text-slate-800"}`}>
+                  {rekap.ringkasan.terlambat}
+                </div>
+                <div className="text-[11px] text-slate-500">kewajiban belum dilaporkan</div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-slate-200 overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-200">
+                <span className="text-xs font-semibold text-slate-700">
+                  Rekap tahunan TA {tahunAnggaran}
+                  {belumDimulai ? ", belum dimulai" : `, posisi per ${NAMA_BULAN[reportPeriod.month - 1]}`}
+                </span>
+                <div role="group" aria-label="Isi sel" className="inline-flex rounded-md border border-slate-300 overflow-hidden text-xs font-medium">
+                  {(
+                    [
+                      { nilai: "status", label: "Status laporan" },
+                      { nilai: "realisasi", label: "Realisasi (juta Rp)" },
+                    ] as const
+                  ).map((opsi) => (
+                    <button
+                      key={opsi.nilai}
+                      type="button"
+                      aria-pressed={isiSel === opsi.nilai}
+                      onClick={() => setIsiSel(opsi.nilai)}
+                      className={`px-3 py-1 cursor-pointer transition ${
+                        isiSel === opsi.nilai ? "bg-emerald-800 text-white" : "bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {opsi.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse" aria-label="Rekap tahunan kegiatan per bulan">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500">
+                      <th className="text-left font-medium px-3 py-2 min-w-[160px]">Kegiatan</th>
+                      {NAMA_BULAN.map((bulan) => (
+                        <th key={bulan} className="font-medium px-0.5 py-2 text-center">{bulan.slice(0, 3)}</th>
+                      ))}
+                      <th className="font-medium px-2 py-2 text-center">Lapor</th>
+                      <th className="font-medium px-2 py-2 text-center">Serap</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rekap.baris.length === 0 ? (
+                      <tr>
+                        <td colSpan={15} className="py-8 text-center text-slate-400">
+                          Belum ada kegiatan untuk tahun anggaran {tahunAnggaran}.
+                        </td>
+                      </tr>
+                    ) : (
+                      rekap.baris.map((baris) => (
+                        <tr key={baris.id} className="border-t border-slate-100">
+                          <td className="px-3 py-1.5">
+                            <div className="font-medium text-slate-800 truncate max-w-[200px]" title={baris.nama}>{baris.nama}</div>
+                            <div className="font-mono text-[10px] text-slate-400">{baris.kode}</div>
+                          </td>
+                          {baris.sel.map((sel) => {
+                            const dipilih = selDipilih?.id === baris.id && selDipilih.bulan === sel.bulan;
+                            return (
+                              <td key={sel.bulan} className="px-0.5 py-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelDipilih({ id: baris.id, bulan: sel.bulan })}
+                                  aria-label={`${baris.nama}, ${NAMA_BULAN[sel.bulan - 1]}: ${teksStatusSel(sel)}`}
+                                  className={`w-full min-w-[26px] h-6 rounded text-[11px] cursor-pointer ${kelasSel(sel)} ${dipilih ? "ring-2 ring-emerald-700" : ""}`}
+                                >
+                                  {isiSel === "realisasi" && sel.status === "sudah" && sel.realisasi !== null
+                                    ? formatJuta(sel.realisasi)
+                                    : simbolSel(sel)}
+                                </button>
+                              </td>
+                            );
+                          })}
+                          <td className="px-2 py-1.5 text-center text-slate-700">{baris.terpenuhi}/{baris.kewajiban}</td>
+                          <td className="px-2 py-1.5 text-center text-slate-700">{baris.serapan.toFixed(1).replace(".", ",")}%</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                  {isiSel === "realisasi" && rekap.baris.length > 0 && (
+                    <tfoot>
+                      <tr className="border-t border-slate-200 font-medium text-slate-700">
+                        <td className="px-3 py-2">Total bulan</td>
+                        {rekap.totalPerBulan.map((total, i) => (
+                          <td key={i} className="px-0.5 py-2 text-center">{total > 0 ? formatJuta(total) : ""}</td>
+                        ))}
+                        <td colSpan={2} />
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
+
+              <div className="px-4 py-2.5 border-t border-slate-100 text-xs text-slate-700 min-h-[40px]">
+                {(() => {
+                  const baris = selDipilih ? rekap.baris.find((b) => b.id === selDipilih.id) : undefined;
+                  const sel = baris && selDipilih ? baris.sel.find((s) => s.bulan === selDipilih.bulan) : undefined;
+                  if (!baris || !sel || !selDipilih) {
+                    return <span className="text-slate-400">Klik sebuah sel untuk melihat detailnya.</span>;
+                  }
+                  return (
+                    <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span>
+                        <b className="font-semibold">{baris.nama}</b>, {NAMA_BULAN[sel.bulan - 1]} {tahunAnggaran}: {teksStatusSel(sel)}
+                        {sel.status === "sudah" && sel.realisasi !== null ? `, realisasi ${fmtRupiah(sel.realisasi)}` : ""}.
+                      </span>
+                      {sel.status !== "belum-berjalan" && (
+                        <Link
+                          href={`/admin/arsip-sp2d?tahun=${tahunAnggaran}&bulan=${sel.bulan}&q=${encodeURIComponent(baris.kode)}`}
+                          className="font-semibold text-emerald-800 hover:underline"
+                        >
+                          Lihat di Arsip
+                        </Link>
+                      )}
+                    </span>
+                  );
+                })()}
+              </div>
+
+              <div className="px-4 py-2.5 border-t border-slate-100 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+                <span><b className="text-emerald-800">✓</b> Sudah lapor</span>
+                <span><b className="text-rose-700">!</b> Belum lapor, terlambat</span>
+                <span><b className="text-amber-800">○</b> Belum lapor, belum jatuh tempo</span>
+                <span><b className="text-slate-500">–</b> Diblokir, tidak dihitung</span>
+                <span><b className="text-slate-400">·</b> Belum berjalan atau tidak wajib</span>
+              </div>
             </div>
           </div>
         )}

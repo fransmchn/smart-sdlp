@@ -23,6 +23,8 @@ export interface Activity {
   wajib?: boolean;
   sudahLapor?: boolean;
   status?: "done" | "pending";
+  // Status kewajiban lapor pada periode yang dilihat (dashboard admin).
+  kepatuhan?: "sudah" | "belum" | "diblokir" | "belum-berjalan";
 }
 
 export interface ArchiveDocument {
